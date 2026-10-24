@@ -1,5 +1,5 @@
-# Gunakan PHP 8.2 dengan Apache
-FROM php:8.2-apache
+# Gunakan PHP 8.5 dengan Apache
+FROM php:8.5-apache
 
 # 1. Install ekstensi sistem yang dibutuhkan
 # Digabung dalam satu RUN (menggunakan && dan \) agar image lebih ringan
