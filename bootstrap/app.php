@@ -11,8 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // TAMBAHKAN BARIS INI
+        // 1. Percayai proxy Render (untuk HTTPS)
         $middleware->trustProxies(at: '*');
+        
+        // 2. Daftarkan alias middleware 'role'
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
