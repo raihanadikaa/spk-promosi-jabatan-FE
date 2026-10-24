@@ -11,9 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
-        ]);
+        // TAMBAHKAN BARIS INI
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
