@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Service untuk Aplikasi Laravel (PHP + Apache)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spk_laravel_app
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=promosi_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+
+  # Service untuk Database MySQL
+  db:
+    image: mysql:8.0
+    container_name: spk_laravel_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sql12839371
+      MYSQL_ROOT_PASSWORD: swVzGLDRvV
+    ports:
+      - "3307:3306" # Menggunakan port 3307 di host agar tidak bentrok dengan MySQL lokal (3306)
+    volumes:
+      - db_data:/var/lib/mysql
+
+# Volume untuk menyimpan data database agar tidak hilang saat container mati
+volumes:
+  db_data:
