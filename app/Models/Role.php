@@ -22,3 +22,5 @@ class Role extends Model
         return $this->hasMany(User::class, 'role_id');
     }
 }
+
+// dadjahdjahdjahdh
