@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -12,99 +12,74 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role_id',
+        'role_id', // Pastikan kolom ini ada di database Anda
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
+            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
     /**
-     * Relasi: user milik satu role.
+     * Relasi ke tabel Role
      */
     public function role(): BelongsTo
     {
-        return $this->belongsTo(Role::class, 'role_id');
+        return $this->belongsTo(Role::class);
     }
 
     /**
-     * Relasi: user bisa terkait dengan satu data karyawan.
-     */
-    public function employee(): HasOne
-    {
-        return $this->hasOne(Employee::class, 'user_id');
-    }
-
-    /* =========================================================
-     |  HELPER ROLE
-     |  Gunakan role_id dari tabel roles:
-     |  1=admin, 2=hrd, 3=manager, 4=direktur, 5=karyawan
-     | ========================================================= */
-
-    public function isAdmin(): bool
-    {
-        return $this->role_id === 1;
-    }
-
-    public function isHrd(): bool
-    {
-        return $this->role_id === 2;
-    }
-
-    public function isManager(): bool
-    {
-        return $this->role_id === 3;
-    }
-
-    public function isDirektur(): bool
-    {
-        return $this->role_id === 4;
-    }
-
-    public function isKaryawan(): bool
-    {
-        return $this->role_id === 5;
-    }
-
-    /**
-     * Nama role dalam bentuk string (lowercase).
+     * Method yang dipanggil oleh RoleMiddleware
+     * Mengembalikan nama role user (misal: 'hrd', 'admin', dll)
      */
     public function roleName(): string
     {
-        return match ($this->role_id) {
-            1 => 'admin',
-            2 => 'hrd',
-            3 => 'manager',
-            4 => 'direktur',
-            5 => 'karyawan',
-            default => 'unknown',
-        };
+        // Mengambil nama dari relasi role. 
+        // Pastikan di tabel 'roles' Anda ada kolom 'name'.
+        // Jika tidak ada role, kembalikan string kosong atau default.
+        return $this->role ? $this->role->name : '';
     }
 
     /**
-     * URL dashboard sesuai role.
+     * (Opsional) Method untuk redirect setelah login
+     * Digunakan di routes/web.php Anda
      */
     public function dashboardUrl(): string
     {
-        return match ($this->role_id) {
-            1 => route('admin.dashboard'),
-            2 => route('hrd.dashboard'),
-            3 => route('manager.dashboard'),
-            4 => route('direktur.dashboard'),
-            5 => route('karyawan.dashboard'),
-            default => route('login'),
+        return match ($this->roleName()) {
+            'admin' => route('admin.dashboard'),
+            'hrd' => route('hrd.dashboard'),
+            'manager' => route('manager.dashboard'),
+            'direktur' => route('direktur.dashboard'),
+            'karyawan' => route('karyawan.dashboard'),
+            default => '/',
         };
     }
 }
