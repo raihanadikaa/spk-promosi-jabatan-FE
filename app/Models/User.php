@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -21,7 +20,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role_id', // Pastikan kolom ini ada di database Anda
+        'role_id',
     ];
 
     /**
@@ -61,15 +60,12 @@ class User extends Authenticatable
      */
     public function roleName(): string
     {
-        // Mengambil nama dari relasi role. 
-        // Pastikan di tabel 'roles' Anda ada kolom 'name'.
-        // Jika tidak ada role, kembalikan string kosong atau default.
-        return $this->role ? $this->role->name : '';
+        // Menggunakan null-safe operator (?->) untuk mencegah error jika role tidak ada
+        return $this->role?->name ?? '';
     }
 
     /**
-     * (Opsional) Method untuk redirect setelah login
-     * Digunakan di routes/web.php Anda
+     * Redirect URL berdasarkan role user
      */
     public function dashboardUrl(): string
     {
@@ -79,7 +75,8 @@ class User extends Authenticatable
             'manager' => route('manager.dashboard'),
             'direktur' => route('direktur.dashboard'),
             'karyawan' => route('karyawan.dashboard'),
-            default => '/',
+            // Jika role tidak dikenali / kosong, kembalikan ke halaman login atau halaman error
+            default => route('login'), 
         };
     }
 }
