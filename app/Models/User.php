@@ -58,10 +58,10 @@ class User extends Authenticatable
      * Method yang dipanggil oleh RoleMiddleware
      * Mengembalikan nama role user (misal: 'hrd', 'admin', dll)
      */
-    public function roleName(): string
+      public function roleName(): string
     {
-        // Menggunakan null-safe operator (?->) untuk mencegah error TypeError
-        return $this->role?->name ?? '';
+        // PERBAIKAN: Gunakan 'role_name' bukan 'name'
+        return $this->role?->role_name ?? '';
     }
 
     /**
