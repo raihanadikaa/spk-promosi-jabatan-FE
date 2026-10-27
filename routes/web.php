@@ -6,6 +6,8 @@ use App\Http\Controllers\Direktur\DirekturDashboardController;
 use App\Http\Controllers\Hrd\HrdDashboardController;
 use App\Http\Controllers\Karyawan\KaryawanDashboardController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,18 +32,36 @@ Route::post('/logout', [AuthController::class, 'logout'])
 /*
 |--------------------------------------------------------------------------
 | Redirect root ke dashboard / login
+| NFR-SEC-05: cek idle timeout 30 menit sebelum redirect ke dashboard
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->to(auth()->user()->dashboardUrl());
+Route::get('/', function (Request $request) {
+    if (Auth::check()) {
+        $last = (int) $request->session()->get('last_activity_at', 0);
+
+        if ($last > 0 && (time() - $last) > 1800) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()
+                ->route('login')
+                ->with('error', 'Sesi Anda telah berakhir karena tidak aktif selama 30 menit. Silakan login kembali.');
+        }
+
+        $request->session()->put('last_activity_at', time());
+
+        return redirect()->to(Auth::user()->dashboardUrl());
     }
+
     return redirect()->route('login');
 });
 
 /*
 |--------------------------------------------------------------------------
 | Dashboard per Role
+| Idle timeout ditangani di masing-masing DashboardController
+| via trait EnforcesIdleTimeout (NFR-SEC-05)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {

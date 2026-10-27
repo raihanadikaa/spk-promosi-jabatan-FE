@@ -1,14 +1,27 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-//hjj
+
+use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
 {
-    public function index(): View
+    use EnforcesIdleTimeout;
+
+    /**
+     * Tampilkan dashboard admin.
+     * NFR-SEC-05: cek idle timeout 30 menit sebelum render.
+     */
+    public function index(Request $request): View|RedirectResponse
     {
+        if ($redirect = $this->enforceIdleTimeout($request)) {
+            return $redirect;
+        }
+
         return view('admin.dashboard');
     }
 }
