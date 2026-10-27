@@ -56,6 +56,13 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
+            // PENGAMAN: Cek jika user tidak memiliki role yang valid
+            // Mencegah error 500 atau redirect loop
+            if (empty($user->roleName())) {
+                Auth::logout();
+                return back()->withErrors(['email' => 'Akun Anda belum memiliki Role. Hubungi Administrator.']);
+            }
+
             return redirect()
                 ->intended($user->dashboardUrl())
                 ->with('success', 'Selamat datang, ' . $user->name . '!');

@@ -25,7 +25,8 @@ Route::middleware('guest')->group(function () {
 | Logout
 |--------------------------------------------------------------------------
 */
-Route::post('/logout', [AuthController::class, 'logout'])
+// Tambahkan GET route untuk berjaga-jaga jika user terpaksa logout lewat URL
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
@@ -37,6 +38,18 @@ Route::post('/logout', [AuthController::class, 'logout'])
 */
 Route::get('/', function (Request $request) {
     if (Auth::check()) {
+        $user = Auth::user();
+
+        // [PENGAMAN REDIRECT LOOP]
+        // Jika user login tapi tidak punya role, tendang keluar
+        if (empty($user->roleName())) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('login')->withErrors(['email' => 'Akun Anda tidak memiliki Role yang valid. Hubungi Admin.']);
+        }
+
+        // NFR-SEC-05: Cek idle timeout 30 menit
         $last = (int) $request->session()->get('last_activity_at', 0);
 
         if ($last > 0 && (time() - $last) > 1800) {
@@ -51,7 +64,8 @@ Route::get('/', function (Request $request) {
 
         $request->session()->put('last_activity_at', time());
 
-        return redirect()->to(Auth::user()->dashboardUrl());
+        // Redirect ke dashboard sesuai role
+        return redirect()->to($user->dashboardUrl());
     }
 
     return redirect()->route('login');

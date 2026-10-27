@@ -60,7 +60,7 @@ class User extends Authenticatable
      */
     public function roleName(): string
     {
-        // Menggunakan null-safe operator (?->) untuk mencegah error jika role tidak ada
+        // Menggunakan null-safe operator (?->) untuk mencegah error TypeError
         return $this->role?->name ?? '';
     }
 
@@ -75,7 +75,7 @@ class User extends Authenticatable
             'manager' => route('manager.dashboard'),
             'direktur' => route('direktur.dashboard'),
             'karyawan' => route('karyawan.dashboard'),
-            // Jika role tidak dikenali / kosong, kembalikan ke halaman login atau halaman error
+            // Fallback ke halaman login (aman dari redirect loop)
             default => route('login'), 
         };
     }
