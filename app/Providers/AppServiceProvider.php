@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +31,9 @@ class AppServiceProvider extends ServiceProvider
         // Di lokal/test: gagal keras jika ada query N+1 (lazy loading di dalam loop) atau atribut salah ketik.
         Model::shouldBeStrict(! $this->app->isProduction());
 
-        Paginator::defaultView('vendor.pagination.talentrank');    }
+        Paginator::defaultView('vendor.pagination.talentrank');    
+
+        // Letakkan Schema di dalam method boot() di sini
+        Schema::defaultStringLength(191);
+    }
 }
