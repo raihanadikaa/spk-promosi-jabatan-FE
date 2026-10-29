@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
-use App\Support\DemoData;
+use App\Models\User;
+use App\Queries\PromotionData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -24,8 +25,8 @@ class AdminDashboardController extends Controller
         }
 
         return view('admin.dashboard', [
-            'users' => DemoData::users(),
-            'roles' => DemoData::roleLabels(),
+            'users' => User::with('role:id,role_name')->get(['id', 'name', 'email', 'role_id', 'is_active', 'last_login_at']),
+            'roles' => PromotionData::roleLabels(),
         ]);
     }
 }

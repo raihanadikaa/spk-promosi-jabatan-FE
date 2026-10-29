@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Karyawan;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
-use App\Support\DemoData;
+use App\Queries\PromotionData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +14,7 @@ class KaryawanDashboardController extends Controller
     use EnforcesIdleTimeout;
 
     /**
-     * Tampilkan dashboard karyawan.
+     * Tampilkan dashboard karyawan: hanya skor milik sendiri (dokumen ROLE).
      * NFR-SEC-05: cek idle timeout 30 menit sebelum render.
      */
     public function index(Request $request): View|RedirectResponse
@@ -23,14 +23,15 @@ class KaryawanDashboardController extends Controller
             return $redirect;
         }
 
-        // Akun karyawan dicocokkan ke data employee lewat nama (nanti: employees.user_id).
-        $employee = collect(DemoData::employees())->firstWhere('name', $request->user()->name);
+        $period = PromotionData::currentPeriod();
+        $employee = $request->user()->employee()->with('supervisor:id,name')->first();
 
         return view('karyawan.dashboard', [
-            'period' => DemoData::currentPeriod(),
+            'period' => $period,
             'employee' => $employee,
-            'result' => $employee ? (DemoData::ranking()[$employee['id']] ?? null) : null,
-            'total' => count(DemoData::ranking()),
+            'result' => $employee ? PromotionData::rankingRow($period, $employee->id) : null,
+            'total' => PromotionData::rankingCount($period),
+            'criteria' => $period ? PromotionData::criteria($period['id']) : [],
         ]);
     }
 }

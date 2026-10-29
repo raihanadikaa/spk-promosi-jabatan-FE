@@ -3,8 +3,8 @@
     $user = auth()->user();
     $role = $user->roleName();
     $menu = \App\Support\Navigation::for($role);
-    $period = \App\Support\DemoData::currentPeriod();
-    $roleLabel = \App\Support\DemoData::roleLabels()[$role] ?? $role;
+    $period = \App\Queries\PromotionData::currentPeriod();
+    $roleLabel = \App\Queries\PromotionData::roleLabels()[$role] ?? $role;
     $initials = collect(explode(' ', $user->name))->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode('');
 @endphp
 <!DOCTYPE html>
@@ -40,11 +40,16 @@
         </div>
 
         <div class="mx-3 mb-2 rounded-ctl bg-canvas px-3 py-2.5">
-            <p class="text-xs text-ink-muted">Periode aktif</p>
-            <p class="flex items-center justify-between gap-2 text-sm font-semibold text-ink">
-                {{ $period['name'] }}
-                <span class="size-2 rounded-full bg-ok" aria-hidden="true"></span>
-            </p>
+            @if ($period)
+                <p class="text-xs text-ink-muted">{{ $period['status'] === 'ongoing' ? 'Periode berjalan' : 'Periode terakhir' }}</p>
+                <p class="flex items-center justify-between gap-2 text-sm font-semibold text-ink">
+                    {{ $period['name'] }}
+                    <x-status :value="$period['status']" class="!px-1.5 !py-0 !text-xs" />
+                </p>
+            @else
+                <p class="text-xs text-ink-muted">Periode</p>
+                <p class="text-sm font-semibold text-ink">Belum ada periode</p>
+            @endif
         </div>
 
         <nav class="flex-1 overflow-y-auto px-3 py-2">
@@ -81,7 +86,9 @@
                     </button>
                 </form>
             </div>
-            <p class="mt-1 px-2 text-xs text-ink-faint">Data contoh, belum tersambung ke backend.</p>
+            <a href="{{ route('account.password') }}" @class(['mt-1 flex items-center gap-2 rounded-ctl px-2 py-1.5 text-sm hover:bg-canvas hover:text-ink', 'font-semibold text-brand' => request()->routeIs('account.*'), 'text-ink-muted' => ! request()->routeIs('account.*')])>
+                <x-icon name="lock" class="size-4" /> Ganti password
+            </a>
         </div>
     </aside>
 

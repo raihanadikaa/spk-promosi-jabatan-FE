@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Direktur;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
-use App\Support\DemoData;
+use App\Queries\PromotionData;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -23,9 +23,15 @@ class DirekturDashboardController extends Controller
             return $redirect;
         }
 
+        $period = PromotionData::currentPeriod();
+        if (! $period) {
+            return view('shared.no-period');
+        }
+
         return view('direktur.dashboard', [
-            'period' => DemoData::currentPeriod(),
-            'ranking' => DemoData::ranking(),
+            'period' => $period,
+            'ranking' => PromotionData::ranking($period, ['status' => 'recommended']),
+            'stale' => PromotionData::staleReasons($period),
         ]);
     }
 }

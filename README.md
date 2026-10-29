@@ -1,58 +1,97 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TalentRank
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Pendukung Keputusan kelayakan promosi jabatan karyawan dengan metode **Simple Additive Weighting (SAW)**.
+Tugas mata kuliah SPK, Kelompok 2 — Sistem Informasi, Politeknik Negeri Subang.
 
-## About Laravel
+Laravel 13 · PHP 8.3+ · MySQL · Blade + Tailwind CSS + Alpine.js (Vite)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Menjalankan di lokal (Laragon)
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env          # sudah diarahkan ke MySQL Laragon, database: spk_promosi_jabatan
+php artisan key:generate
+php artisan migrate --seed    # skema + data contoh
+npm run dev                   # biarkan jalan (hot reload)
+php artisan serve             # buka http://127.0.0.1:8000
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Buat database `spk_promosi_jabatan` dulu di HeidiSQL/phpMyAdmin Laragon. Untuk mengulang data dari awal: `php artisan migrate:fresh --seed`.
 
-## Contributing
+### Akun demo (password: `password`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Role | Email |
+|---|---|
+| Admin | admin@talentrank.test |
+| HRD | hrd@talentrank.test |
+| Atasan | atasan@talentrank.test (bawahan: departemen Operasional) |
+| Direktur | direktur@talentrank.test |
+| Karyawan | karyawan@talentrank.test (Rian Pratama) |
 
-## Code of Conduct
+Atasan lain: `ratna.sari@`, `andi.kurniawan@`, `yusuf.hidayat@`, `lestari.h@` (domain sama). `wawan.setiawan@` sengaja nonaktif.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Alur
 
-## Security Vulnerabilities
+```
+HRD buat periode (draft) → atur bobot kriteria (total 100%) → mulai periode
+   ↓
+Atasan isi nilai bawahannya (draft boleh belum lengkap) → kirim (terkunci; HRD bisa membuka kembali)
+   ↓
+HRD "Hitung ulang ranking" → SAW: normalisasi → skor → peringkat; 3 teratas direkomendasikan
+   ↓
+Direktur setujui / tolak (tolak wajib alasan)
+   ↓
+HRD tutup periode (syarat: ranking sudah dihitung & semua rekomendasi diputuskan) → semua terkunci
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola akun & role (tidak ikut menilai).
 
-## License
+## Kriteria & rumus
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Kode | Kriteria | Jenis | Bobot awal | Diisi oleh |
+|---|---|---|---|---|
+| C1 | Masa kerja (tahun) | benefit | 15% | otomatis dari tanggal bergabung |
+| C2 | Kinerja (0–100) | benefit | 30% | atasan |
+| C3 | Kompetensi (0–100) | benefit | 25% | atasan |
+| C4 | Kedisiplinan (hari terlambat/absen) | cost | 15% | atasan |
+| C5 | Pelatihan & sertifikasi (jumlah) | benefit | 15% | atasan |
+
+- Normalisasi: benefit `r = x / max(x)`, cost `r = min(x) / x`
+- Skor akhir: `V = Σ wⱼ · rᵢⱼ`
+- Seluruh jejak disimpan: `assessment_details` (nilai mentah) → `normalized_scores` (r dan w·r) → `ranking_results` (V, peringkat, keputusan).
+
+## Struktur kode
+
+| Lokasi | Isi |
+|---|---|
+| `database/migrations` | Skema sesuai ERD (roles, users, departments, positions, employees, assessment_periods, criteria, criteria_weights, assessments, assessment_details, normalized_scores, ranking_results) |
+| `app/Models` | Model Eloquent + relasi |
+| `app/Services/SawCalculator.php` | Rumus SAW murni (tanpa database), diuji unit |
+| `app/Services/*Service.php` | Aturan bisnis: penilaian, perhitungan ranking (transaksi + lock), periode, keputusan direktur |
+| `app/Http/Requests` | Validasi input + pesan bahasa Indonesia |
+| `app/Queries/PromotionData.php` | Query baca untuk halaman (paginasi & filter di database, tanpa N+1) |
+| `app/Http/Controllers` | Tipis: validasi → service → redirect/view |
+| `resources/views` | Tampilan; pedoman visual di `DESIGN.md` |
+
+Pelanggaran aturan bisnis selalu dikembalikan sebagai pesan validasi (toast + pesan di field), tidak pernah error 500.
+
+## Keamanan
+
+- Akses per role lewat middleware `role:`; atasan hanya bisa membuka/menilai bawahannya (`employees.supervisor_id`).
+- Login dikunci 5 menit setelah 5 kali gagal; sesi berakhir setelah 30 menit tidak aktif.
+- Akun nonaktif langsung dikeluarkan dari semua sesi; admin tidak bisa menonaktifkan/mengubah role dirinya sendiri.
+- Admin tidak menentukan password: sistem membuat password sementara acak (ditampilkan sekali), pengguna menggantinya di menu *Ganti password*.
+- Header keamanan (CSP ber-nonce, X-Frame-Options, nosniff, Referrer-Policy, HSTS di HTTPS); logout hanya via POST.
+- Ekspor CSV aman dari formula injection; pencarian LIKE di-escape.
+- Seeder menolak berjalan di production tanpa `DEMO_SEED_PASSWORD` (≥ 12 karakter).
+
+## Test
+
+```bash
+php artisan test
+```
+
+Mencakup: rumus SAW, alur lengkap satu periode, validasi & aturan bisnis, hak akses tiap role, keamanan akun,
+**crawler yang login sebagai setiap role lalu membuka semua link dan mengirim semua form** (tidak boleh ada error 500),
+serta uji performa (jumlah query per halaman tidak boleh naik saat data bertambah).

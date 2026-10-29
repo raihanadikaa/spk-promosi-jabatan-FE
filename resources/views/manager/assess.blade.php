@@ -1,33 +1,42 @@
 @php
     use App\Support\Format;
 
-    $locked = $employee['status'] === 'submitted';
     $raw = $employee['raw'] ?? [];
-    $limits = ['C2' => [0, 100], 'C3' => [0, 100], 'C4' => [0, 60], 'C5' => [0, 20]];
 @endphp
 
 <x-app-layout :title="'Penilaian ' . $employee['name']"
               :subtitle="$employee['position'] . ' · ' . $employee['department'] . ' · ' . $period['name']"
               :back="['url' => route('manager.assessments'), 'label' => 'Penilaian bawahan']">
 
-    @if ($locked)
+    @if ($employee['status'] === 'submitted')
         <div class="mb-6 flex gap-3 rounded-panel border border-ok/25 bg-ok-bg px-4 py-3 text-ok" role="note">
             <x-icon name="lock" class="mt-0.5" />
-            <p>Dikirim {{ Format::dateTime($employee['submitted_at']) }}. Nilai terkunci; hubungi HRD jika perlu koreksi.</p>
+            <p>Dikirim {{ Format::dateTime($employee['submitted_at']) }}. Nilai terkunci; minta HRD membuka kembali jika perlu koreksi.</p>
         </div>
+    @elseif ($locked)
+        <div class="mb-6 flex gap-3 rounded-panel border border-line bg-surface px-4 py-3 text-ink-muted" role="note">
+            <x-icon name="lock" class="mt-0.5" />
+            <p>Periode {{ $period['name'] }} tidak sedang berlangsung, jadi nilai tidak bisa diubah.</p>
+        </div>
+    @elseif ($employee['status'] === 'draft')
+        <p class="mb-6 text-sm text-ink-muted">Draft terakhir disimpan {{ Format::dateTime($employee['updated_at']) }}.</p>
     @endif
 
-    <form method="POST" action="{{ route('demo.action') }}" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+    <form method="POST" action="{{ route('manager.assessments.save', $employee['id']) }}" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]" novalidate
           x-data="{ submitting: false }"
-          @submit="if ($event.submitter?.value === 'assessment.submit' && !confirm({{ \Illuminate\Support\Js::from('Kirim penilaian ' . $employee['name'] . ' ke HRD? Setelah dikirim, nilai tidak bisa diubah.') }})) { $event.preventDefault(); return } setTimeout(() => submitting = true)">
+          @submit="if ($event.submitter?.value === 'submit' && !confirm({{ \Illuminate\Support\Js::from('Kirim penilaian ' . $employee['name'] . ' ke HRD? Setelah dikirim, nilai terkunci.') }})) { $event.preventDefault(); return } setTimeout(() => submitting = true)">
         @csrf
-        <input type="hidden" name="redirect" value="{{ route('manager.assessments', absolute: false) }}">
+        @method('PUT')
 
         <x-panel flush>
             <fieldset @disabled($locked) class="divide-y divide-line">
                 <legend class="sr-only">Nilai per kriteria</legend>
                 @foreach ($criteria as $c)
-                    @php $code = $c['code']; @endphp
+                    @php
+                        $code = $c['code'];
+                        $error = $errors->first("scores.$code");
+                        $value = old("scores.$code", isset($raw[$code]) ? (int) $raw[$code] : '');
+                    @endphp
                     <div class="grid gap-4 px-5 py-5 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-start">
                         <div>
                             <label for="v-{{ $code }}" class="flex items-center gap-2 font-semibold">
@@ -44,30 +53,34 @@
                                 <p class="text-xs text-ink-muted">otomatis</p>
                             </div>
                         @else
-                            @php [$min, $max] = $limits[$code]; @endphp
-                            <div x-data="{ v: {{ \Illuminate\Support\Js::from($raw[$code] ?? '') }} }">
+                            <div x-data="{ v: {{ \Illuminate\Support\Js::from($value) }} }">
                                 <div class="relative">
-                                    <input id="v-{{ $code }}" type="number" name="scores[{{ $code }}]" x-model.number="v"
-                                           min="{{ $min }}" max="{{ $max }}" step="1" inputmode="numeric" required
+                                    <input id="v-{{ $code }}" type="number" name="scores[{{ $code }}]" x-model="v"
+                                           min="{{ $c['min'] }}" max="{{ $c['max'] }}" step="1" inputmode="numeric"
                                            aria-describedby="h-{{ $code }} r-{{ $code }}"
-                                           :aria-invalid="(v !== '' && (v < {{ $min }} || v > {{ $max }})).toString()"
-                                           :class="v !== '' && (v < {{ $min }} || v > {{ $max }}) && '!border-bad'"
-                                           class="field-input num pr-24 text-right disabled:bg-canvas disabled:text-ink-muted">
+                                           @if ($error) aria-invalid="true" @endif
+                                           :class="(v !== '' && (Number(v) < {{ $c['min'] }} || Number(v) > {{ $c['max'] }})) && '!border-bad'"
+                                           @class(['field-input num pr-24 text-right disabled:bg-canvas disabled:text-ink-muted', '!border-bad' => $error])>
                                     <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-ink-muted">{{ $c['input'] === 'score' ? '/ 100' : $c['unit'] }}</span>
                                 </div>
-                                <p id="r-{{ $code }}" class="mt-1 text-right text-xs"
-                                   :class="v !== '' && (v < {{ $min }} || v > {{ $max }}) ? 'font-semibold text-bad' : 'text-ink-faint'">
-                                    Rentang {{ $min }}–{{ $max }}
-                                </p>
+                                @if ($error)
+                                    <p id="r-{{ $code }}" class="field-error text-right">{{ $error }}</p>
+                                @else
+                                    <p id="r-{{ $code }}" class="mt-1 text-right text-xs"
+                                       :class="v !== '' && (Number(v) < {{ $c['min'] }} || Number(v) > {{ $c['max'] }}) ? 'font-semibold text-bad' : 'text-ink-faint'">
+                                        Rentang {{ $c['min'] }}–{{ $c['max'] }}
+                                    </p>
+                                @endif
                             </div>
                         @endif
                     </div>
                 @endforeach
 
                 <div class="px-5 py-5">
-                    <label for="note" class="field-label">Catatan untuk HRD <span class="font-normal text-ink-muted">(opsional)</span></label>
-                    <textarea id="note" name="note" rows="3" maxlength="1000" class="field-input disabled:bg-canvas"
-                              placeholder="Konteks yang tidak tergambar dari angka, mis. project besar yang diselesaikan"></textarea>
+                    <label for="notes" class="field-label">Catatan untuk HRD <span class="font-normal text-ink-muted">(opsional)</span></label>
+                    <textarea id="notes" name="notes" rows="3" maxlength="1000" class="field-input disabled:bg-canvas"
+                              placeholder="Konteks yang tidak tergambar dari angka, mis. project besar yang diselesaikan">{{ old('notes', $employee['note']) }}</textarea>
+                    @error('notes')<p class="field-error">{{ $message }}</p>@enderror
                 </div>
             </fieldset>
         </x-panel>
@@ -77,13 +90,14 @@
                 <ul class="space-y-2.5 text-base text-ink-muted">
                     <li class="flex gap-2"><x-icon name="check" class="mt-0.5 size-4 text-ok" /> Nilai berdasarkan catatan kerja selama periode, bukan kesan pribadi.</li>
                     <li class="flex gap-2"><x-icon name="check" class="mt-0.5 size-4 text-ok" /> Kedisiplinan diisi dari rekap absensi.</li>
-                    <li class="flex gap-2"><x-icon name="check" class="mt-0.5 size-4 text-ok" /> Skor akhir dihitung HRD setelah semua penilaian masuk, jadi tidak tampil di sini.</li>
+                    <li class="flex gap-2"><x-icon name="check" class="mt-0.5 size-4 text-ok" /> Skor akhir dihitung HRD setelah penilaian masuk, jadi tidak tampil di sini.</li>
                 </ul>
             </x-panel>
             @unless ($locked)
                 <div class="flex flex-col gap-2">
-                    <x-btn type="submit" name="action" value="assessment.submit" icon="check" x-bind:disabled="submitting">Kirim ke HRD</x-btn>
-                    <x-btn type="submit" name="action" value="assessment.draft" variant="secondary" formnovalidate x-bind:disabled="submitting">Simpan sebagai draft</x-btn>
+                    <x-btn type="submit" name="action" value="submit" icon="check" x-bind:disabled="submitting">Kirim ke HRD</x-btn>
+                    <x-btn type="submit" name="action" value="draft" variant="secondary" x-bind:disabled="submitting">Simpan sebagai draft</x-btn>
+                    <p class="text-sm text-ink-muted">Draft boleh belum lengkap. Kirim mewajibkan semua nilai terisi.</p>
                 </div>
             @endunless
         </div>

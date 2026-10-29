@@ -60,8 +60,18 @@ class AuthController extends Controller
             // Mencegah error 500 atau redirect loop
             if (empty($user->roleName())) {
                 Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
                 return back()->withErrors(['email' => 'Akun Anda belum memiliki Role. Hubungi Administrator.']);
             }
+
+            if (! $user->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                return back()->withErrors(['email' => 'Akun Anda dinonaktifkan. Hubungi Administrator.'])->onlyInput('email');
+            }
+
+            $user->forceFill(['last_login_at' => now()])->saveQuietly();
 
             return redirect()
                 ->intended($user->dashboardUrl())

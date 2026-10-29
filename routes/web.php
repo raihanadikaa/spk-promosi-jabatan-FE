@@ -3,7 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DemoActionController;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Direktur\DirekturController;
 use App\Http\Controllers\Direktur\DirekturDashboardController;
 use App\Http\Controllers\Hrd\HrdController;
@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.attempt');
+    // Batas per IP (selain kunci per email+IP di AuthController) untuk mencegah password spraying.
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.attempt');
 });
 
 /*
@@ -83,32 +84,58 @@ Route::get('/', function (Request $request) {
 | 'idle' = NFR-SEC-05 idle timeout 30 menit untuk semua halaman ber-login.
 |--------------------------------------------------------------------------
 */
+Route::pattern('employee', '[0-9]+');
+Route::pattern('period', '[0-9]+');
+Route::pattern('assessment', '[0-9]+');
+Route::pattern('user', '[0-9]+');
+
 Route::middleware(['auth', 'idle', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/pengguna', [AdminController::class, 'users'])->name('users');
+    Route::get('/pengguna', [AdminController::class, 'index'])->name('users');
+    Route::post('/pengguna', [AdminController::class, 'store'])->name('users.store');
+    Route::put('/pengguna/{user}', [AdminController::class, 'update'])->name('users.update');
+    Route::post('/pengguna/{user}/status', [AdminController::class, 'toggle'])->name('users.toggle');
+    Route::post('/pengguna/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset');
 });
 
 Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->group(function () {
     Route::get('/dashboard', [HrdDashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/karyawan', [HrdController::class, 'employees'])->name('employees');
+    Route::post('/karyawan', [HrdController::class, 'storeEmployee'])->name('employees.store');
+    Route::put('/karyawan/{employee}', [HrdController::class, 'updateEmployee'])->name('employees.update');
+
     Route::get('/periode', [HrdController::class, 'periods'])->name('periods');
+    Route::post('/periode', [HrdController::class, 'storePeriod'])->name('periods.store');
+    Route::post('/periode/{period}/mulai', [HrdController::class, 'activatePeriod'])->name('periods.activate');
+    Route::post('/periode/{period}/tutup', [HrdController::class, 'closePeriod'])->name('periods.close');
+
     Route::get('/kriteria', [HrdController::class, 'criteria'])->name('criteria');
+    Route::put('/kriteria', [HrdController::class, 'updateWeights'])->name('criteria.update');
+
     Route::get('/proses-saw', [HrdController::class, 'saw'])->name('saw');
+    Route::post('/proses-saw', [HrdController::class, 'runSaw'])->middleware('throttle:10,1')->name('saw.run');
+    Route::post('/penilaian/{assessment}/buka', [HrdController::class, 'reopenAssessment'])->name('assessments.reopen');
+
     Route::get('/ranking', [HrdController::class, 'ranking'])->name('ranking');
-    Route::get('/ranking/{employee}', [HrdController::class, 'candidate'])->whereNumber('employee')->name('ranking.show');
+    Route::get('/ranking/unduh', [HrdController::class, 'export'])->name('ranking.export');
+    Route::get('/ranking/{employee}', [HrdController::class, 'candidate'])->name('ranking.show');
 });
 
 Route::middleware(['auth', 'idle', 'role:manager'])->prefix('atasan')->name('manager.')->group(function () {
     Route::get('/dashboard', [ManagerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/penilaian', [ManagerController::class, 'assessments'])->name('assessments');
-    Route::get('/penilaian/{employee}', [ManagerController::class, 'assess'])->whereNumber('employee')->name('assessments.edit');
+    Route::get('/penilaian/{employee}', [ManagerController::class, 'assess'])->name('assessments.edit');
+    Route::put('/penilaian/{employee}', [ManagerController::class, 'save'])->name('assessments.save');
     Route::get('/ranking', [ManagerController::class, 'ranking'])->name('ranking');
 });
 
 Route::middleware(['auth', 'idle', 'role:direktur'])->prefix('direktur')->name('direktur.')->group(function () {
     Route::get('/dashboard', [DirekturDashboardController::class, 'index'])->name('dashboard');
     Route::get('/ranking', [DirekturController::class, 'ranking'])->name('ranking');
-    Route::get('/ranking/{employee}', [DirekturController::class, 'candidate'])->whereNumber('employee')->name('ranking.show');
+    Route::get('/ranking/unduh', [DirekturController::class, 'export'])->name('ranking.export');
+    Route::get('/ranking/{employee}', [DirekturController::class, 'candidate'])->name('ranking.show');
+    Route::post('/ranking/{employee}/keputusan', [DirekturController::class, 'decide'])->name('ranking.decide');
 });
 
 Route::middleware(['auth', 'idle', 'role:karyawan'])->prefix('karyawan')->name('karyawan.')->group(function () {
@@ -117,11 +144,10 @@ Route::middleware(['auth', 'idle', 'role:karyawan'])->prefix('karyawan')->name('
 
 /*
 |--------------------------------------------------------------------------
-| Aksi form sementara (belum ada backend)
-| Menerima POST dari form UI, lalu kembali dengan notifikasi. Tidak menyimpan apa pun.
-| Ganti dengan route/controller asli saat backend siap.
+| Akun (semua role)
 |--------------------------------------------------------------------------
 */
-Route::post('/demo/aksi', DemoActionController::class)
-    ->middleware(['auth', 'idle', 'throttle:30,1'])
-    ->name('demo.action');
+Route::middleware(['auth', 'idle'])->prefix('akun')->name('account.')->group(function () {
+    Route::get('/password', [AccountController::class, 'editPassword'])->name('password');
+    Route::put('/password', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('password.update');
+});

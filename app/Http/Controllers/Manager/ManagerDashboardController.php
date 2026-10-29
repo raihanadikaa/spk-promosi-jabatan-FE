@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Manager;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
-use App\Support\DemoData;
+use App\Queries\PromotionData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -23,10 +23,23 @@ class ManagerDashboardController extends Controller
             return $redirect;
         }
 
+        $period = PromotionData::currentPeriod();
+        if (! $period) {
+            return view('shared.no-period');
+        }
+
+        $me = $request->user()->id;
+        $next = PromotionData::employeeQuery($period, ['supervisor_id' => $me, 'status' => 'draft'])->first()
+            ?? PromotionData::employeeQuery($period, ['supervisor_id' => $me, 'status' => 'pending'])->first();
+
         return view('manager.dashboard', [
-            'period' => DemoData::currentPeriod(),
-            'team' => DemoData::subordinatesOf($request->user()->name),
-            'ranking' => array_intersect_key(DemoData::ranking(), DemoData::subordinatesOf($request->user()->name)),
+            'period' => $period,
+            'open' => PromotionData::isOpen($period),
+            'counts' => PromotionData::statusCounts($period, $me),
+            'next' => $next ? PromotionData::employeeArray($next, $period) : null,
+            'recent' => PromotionData::employeeQuery($period, ['supervisor_id' => $me])->limit(8)->get()
+                ->map(fn ($e) => PromotionData::employeeArray($e, $period)),
+            'ranking' => PromotionData::ranking($period, ['employee_ids' => $request->user()->subordinates()->pluck('id')->all()], limit: 5),
         ]);
     }
 }

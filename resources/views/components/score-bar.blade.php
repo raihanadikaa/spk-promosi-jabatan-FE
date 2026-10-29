@@ -2,7 +2,7 @@
 {{-- Bar komposisi skor SAW: tiap segmen = kontribusi wj·rij satu kriteria. Skala penuh = 1.0 --}}
 @php
     $colors = ['C1' => 'bg-c1', 'C2' => 'bg-c2', 'C3' => 'bg-c3', 'C4' => 'bg-c4', 'C5' => 'bg-c5'];
-    $names = array_column(\App\Support\DemoData::criteria(), 'name', 'code');
+    $names = \App\Queries\PromotionData::criteriaNames();
     $total = array_sum($parts);
     $summary = collect($parts)->map(fn ($v, $k) => $names[$k] . ' ' . number_format($v, 3, ',', '.'))->implode(', ');
 @endphp

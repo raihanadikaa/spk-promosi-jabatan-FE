@@ -1,5 +1,5 @@
 @php
-    $criteria = \App\Support\DemoData::criteria();
+    $criteria = \App\Queries\PromotionData::criteria();
     $colors = ['C1' => 'bg-c1', 'C2' => 'bg-c2', 'C3' => 'bg-c3', 'C4' => 'bg-c4', 'C5' => 'bg-c5'];
 @endphp
 <!DOCTYPE html>

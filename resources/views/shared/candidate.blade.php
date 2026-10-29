@@ -1,8 +1,6 @@
 @php
     use App\Support\Format;
 
-    // Batas kolom (max untuk benefit, min untuk cost) diambil dari semua penilaian terkirim.
-    $raws = collect(\App\Support\DemoData::ranking())->pluck('raw');
     $delta = $row['previous_score'] !== null ? $row['score'] - $row['previous_score'] : null;
     $status = $row['recommended'] ? ($row['approval_status'] === 'pending' ? 'waiting' : $row['approval_status']) : null;
 @endphp
@@ -56,8 +54,8 @@
                             @foreach ($criteria as $c)
                                 @php
                                     $code = $c['code'];
-                                    $x = $row['raw'][$code];
-                                    $bound = $c['type'] === 'cost' ? $raws->min($code) : $raws->max($code);
+                                    $x = $row['raw'][$code] ?? 0;
+                                    $bound = $bounds[$code] ?? 0; // max (benefit) / min (cost) seluruh peserta
                                 @endphp
                                 <tr>
                                     <td>
@@ -93,13 +91,16 @@
         <div class="space-y-6">
             <x-panel title="Status rekomendasi">
                 @if (! $row['recommended'])
-                    <p class="text-ink-muted">Tidak masuk {{ \App\Support\DemoData::RECOMMENDED_COUNT }} besar, sehingga tidak diajukan untuk promosi periode ini.</p>
+                    <p class="text-ink-muted">Tidak masuk {{ \App\Queries\PromotionData::RECOMMENDED_COUNT }} besar, sehingga tidak diajukan untuk promosi periode ini.</p>
                 @elseif ($row['approval_status'] !== 'pending')
                     <x-status :value="$status" />
-                    <p class="mt-3 text-ink">{{ $row['approval_note'] }}</p>
-                    <p class="mt-2 text-sm text-ink-muted">Diputuskan {{ Format::dateTime($row['approval_at']) }}</p>
+                    <p class="mt-3 text-ink">{{ $row['approval_note'] ?: 'Tanpa catatan.' }}</p>
+                    <p class="mt-2 text-sm text-ink-muted">Diputuskan {{ $row['approval_by'] ? 'oleh ' . $row['approval_by'] . ', ' : '' }}{{ Format::dateTime($row['approval_at']) }}</p>
                 @elseif ($canDecide)
-                    <form method="POST" action="{{ route('demo.action') }}" x-data="{ decision: '{{ old('action') }}' }" class="space-y-4">
+                    <form method="POST" action="{{ route('direktur.ranking.decide', $row['id']) }}" class="space-y-4" novalidate
+                          x-data @submit="if (!confirm($event.submitter?.value === 'approve'
+                                ? {{ \Illuminate\Support\Js::from('Setujui promosi ' . $row['name'] . '? Keputusan tidak bisa diubah.') }}
+                                : {{ \Illuminate\Support\Js::from('Tolak rekomendasi promosi ' . $row['name'] . '?') }})) $event.preventDefault()">
                         @csrf
                         <p class="text-ink-muted">Direkomendasikan sistem berdasarkan peringkat. Keputusan akhir ada di Anda.</p>
                         <div>
@@ -115,13 +116,13 @@
                             @enderror
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <x-btn type="submit" name="action" value="promotion.reject" variant="danger" icon="x">Tolak</x-btn>
-                            <x-btn type="submit" name="action" value="promotion.approve" variant="success" icon="check">Setujui promosi</x-btn>
+                            <x-btn type="submit" name="decision" value="reject" variant="danger" icon="x">Tolak</x-btn>
+                            <x-btn type="submit" name="decision" value="approve" variant="success" icon="check">Setujui promosi</x-btn>
                         </div>
                     </form>
                 @else
                     <x-status :value="$status" />
-                    <p class="mt-3 text-ink-muted">Menunggu keputusan direktur.</p>
+                    <p class="mt-3 text-ink-muted">{{ $period['status'] === 'ongoing' ? 'Menunggu keputusan direktur.' : 'Periode ditutup tanpa keputusan.' }}</p>
                 @endif
             </x-panel>
 

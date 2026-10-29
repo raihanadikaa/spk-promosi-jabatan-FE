@@ -1,49 +1,50 @@
 @php
     use App\Support\Format;
 
-    $counts = collect($employees)->countBy('status');
-    $recommended = collect($ranking)->where('recommended', true);
-    $approved = $recommended->where('approval_status', 'approved')->count();
     $daysLeft = Format::daysLeft($period['deadline']);
-
-    $byDept = collect($employees)->groupBy('department');
-    $followUps = collect($employees)->whereIn('status', ['draft', 'pending'])->sortBy('status');
+    $open = $period['status'] === 'ongoing';
 @endphp
 
 <x-app-layout title="Ringkasan {{ $period['name'] }}"
-              subtitle="Batas pengisian nilai oleh atasan {{ Format::date($period['deadline']) }}{{ $daysLeft >= 0 ? ', ' . $daysLeft . ' hari lagi' : '' }}.">
+              subtitle="Batas pengisian nilai oleh atasan {{ Format::date($period['deadline']) }}{{ $open && $daysLeft >= 0 ? ', ' . $daysLeft . ' hari lagi' : '' }}.">
     <x-slot:actions>
         <x-btn variant="secondary" :href="route('hrd.ranking')" icon="trophy">Lihat ranking</x-btn>
-        <form method="POST" action="{{ route('demo.action') }}">
-            @csrf
-            <input type="hidden" name="action" value="saw.run">
-            <x-btn type="submit" icon="refresh">Hitung ulang ranking</x-btn>
-        </form>
+        @if ($open)
+            <form method="POST" action="{{ route('hrd.saw.run') }}">
+                @csrf
+                <x-btn type="submit" icon="refresh">Hitung ulang ranking</x-btn>
+            </form>
+        @endif
     </x-slot:actions>
 
+    @include('partials.stale-banner')
+
     <x-stat-strip :items="[
-        ['label' => 'Penilaian terkirim', 'value' => ($counts['submitted'] ?? 0) . ' / ' . count($employees), 'hint' => 'karyawan'],
-        ['label' => 'Masih draft', 'value' => $counts['draft'] ?? 0, 'hint' => 'menunggu atasan'],
-        ['label' => 'Belum dinilai', 'value' => $counts['pending'] ?? 0],
-        ['label' => 'Direkomendasikan', 'value' => $recommended->count(), 'hint' => $approved . ' sudah disetujui'],
+        ['label' => 'Penilaian terkirim', 'value' => $counts['submitted'] . ' / ' . $counts['total'], 'hint' => 'karyawan aktif'],
+        ['label' => 'Masih draft', 'value' => $counts['draft'], 'hint' => 'menunggu atasan'],
+        ['label' => 'Belum dinilai', 'value' => $counts['pending']],
+        ['label' => 'Direkomendasikan', 'value' => $approvals['recommended'], 'hint' => $approvals['approved'] . ' disetujui, ' . $approvals['pending'] . ' menunggu'],
     ]" />
 
     <div class="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <x-panel title="Kandidat teratas" description="Dihitung dari {{ $counts['submitted'] ?? 0 }} penilaian yang sudah terkirim." flush>
+        <x-panel title="Kandidat teratas" description="{{ $period['calculated_at'] ? 'Perhitungan terakhir ' . Format::dateTime($period['calculated_at']) . '.' : 'Belum dihitung.' }}" flush>
             <x-slot:actions>
                 <a href="{{ route('hrd.ranking') }}" class="link text-sm">Semua ranking</a>
             </x-slot:actions>
 
-            <ol class="divide-y divide-line">
-                @foreach (collect($ranking)->take(5) as $row)
-                    <li>
-                        @include('partials.ranking-row', ['row' => $row, 'href' => route('hrd.ranking.show', $row['id'])])
-                    </li>
-                @endforeach
-            </ol>
-            <div class="border-t border-line px-5 py-3">
-                <x-criteria-legend />
-            </div>
+            @if (empty($top))
+                <x-empty-state icon="trophy" title="Ranking belum dihitung"
+                               body="Tekan Hitung ulang ranking setelah minimal satu penilaian terkirim." />
+            @else
+                <ol class="divide-y divide-line">
+                    @foreach ($top as $row)
+                        <li>@include('partials.ranking-row', ['row' => $row, 'href' => route('hrd.ranking.show', $row['id'])])</li>
+                    @endforeach
+                </ol>
+                <div class="border-t border-line px-5 py-3">
+                    <x-criteria-legend />
+                </div>
+            @endif
         </x-panel>
 
         <x-panel title="Perlu ditindaklanjuti" flush>
@@ -63,6 +64,13 @@
                         </li>
                     @endforeach
                 </ul>
+                @if ($counts['draft'] + $counts['pending'] > $followUps->count())
+                    <div class="border-t border-line px-5 py-3">
+                        <a href="{{ route('hrd.employees', ['status' => 'unfinished']) }}" class="link text-sm">
+                            Lihat semua {{ $counts['draft'] + $counts['pending'] }} karyawan yang belum selesai
+                        </a>
+                    </div>
+                @endif
             @endif
         </x-panel>
     </div>
@@ -73,30 +81,25 @@
                 <thead>
                     <tr>
                         <th scope="col">Departemen</th>
-                        <th scope="col" class="hidden sm:table-cell">Atasan penilai</th>
-                        <th scope="col" class="w-[40%] min-w-40">Progres</th>
+                        <th scope="col" class="w-[50%] min-w-40">Progres</th>
                         <th scope="col" class="text-right">Terkirim</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($byDept as $dept => $list)
-                        @php
-                            $done = $list->where('status', 'submitted')->count();
-                            $draft = $list->where('status', 'draft')->count();
-                            $total = $list->count();
-                        @endphp
+                    @forelse ($departments as $d)
                         <tr>
-                            <td class="font-semibold">{{ $dept }}</td>
-                            <td class="hidden text-ink-muted sm:table-cell">{{ $list->first()['assessor'] }}</td>
+                            <td class="font-semibold">{{ $d['department'] }}</td>
                             <td>
-                                <div class="flex h-2 w-full gap-px overflow-hidden rounded-full bg-line" role="img" aria-label="{{ $done }} terkirim, {{ $draft }} draft, dari {{ $total }} karyawan">
-                                    <span class="h-full bg-ok" style="width: {{ $done / $total * 100 }}%"></span>
-                                    <span class="h-full bg-[#D9A441]" style="width: {{ $draft / $total * 100 }}%"></span>
+                                <div class="flex h-2 w-full gap-px overflow-hidden rounded-full bg-line" role="img" aria-label="{{ $d['submitted'] }} terkirim, {{ $d['draft'] }} draft, dari {{ $d['total'] }} karyawan">
+                                    <span class="h-full bg-ok" style="width: {{ $d['submitted'] / max(1, $d['total']) * 100 }}%"></span>
+                                    <span class="h-full bg-[#D9A441]" style="width: {{ $d['draft'] / max(1, $d['total']) * 100 }}%"></span>
                                 </div>
                             </td>
-                            <td class="num whitespace-nowrap text-right font-semibold">{{ $done }} / {{ $total }}</td>
+                            <td class="num whitespace-nowrap text-right font-semibold">{{ $d['submitted'] }} / {{ $d['total'] }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr><td colspan="3" class="text-ink-muted">Belum ada karyawan aktif.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

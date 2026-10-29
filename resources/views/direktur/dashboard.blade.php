@@ -13,6 +13,8 @@
         <x-btn variant="secondary" :href="route('direktur.ranking')" icon="trophy">Ranking lengkap</x-btn>
     </x-slot:actions>
 
+    @include('partials.stale-banner')
+
     <section aria-labelledby="menunggu">
         <h2 id="menunggu" class="mb-3 flex items-center gap-2 text-md font-bold">
             Menunggu keputusan Anda
