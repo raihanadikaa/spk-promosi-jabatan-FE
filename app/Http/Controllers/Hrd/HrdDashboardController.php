@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Hrd;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
+use App\Support\DemoData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,6 +23,10 @@ class HrdDashboardController extends Controller
             return $redirect;
         }
 
-        return view('hrd.dashboard');
+        return view('hrd.dashboard', [
+            'period' => DemoData::currentPeriod(),
+            'employees' => DemoData::employees(),
+            'ranking' => DemoData::ranking(),
+        ]);
     }
 }

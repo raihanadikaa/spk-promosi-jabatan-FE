@@ -42,6 +42,9 @@ COPY . /var/www/html
 # 7. Jalankan composer install untuk membuat folder vendor
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# 7b. Build aset frontend (Tailwind + Alpine via Vite) → public/build
+RUN npm ci && npm run build && rm -rf node_modules
+
 # 8. Set permission untuk folder storage dan cache (Wajib untuk Laravel)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 

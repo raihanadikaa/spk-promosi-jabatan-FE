@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
+use App\Support\DemoData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,6 +23,9 @@ class AdminDashboardController extends Controller
             return $redirect;
         }
 
-        return view('admin.dashboard');
+        return view('admin.dashboard', [
+            'users' => DemoData::users(),
+            'roles' => DemoData::roleLabels(),
+        ]);
     }
 }

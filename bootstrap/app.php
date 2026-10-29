@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // 2. Daftarkan alias middleware 'role'
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'idle' => \App\Http\Middleware\IdleTimeout::class,
+        ]);
+
+        // 3. Header keamanan (CSP, anti-clickjacking, dll) untuk semua halaman web
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

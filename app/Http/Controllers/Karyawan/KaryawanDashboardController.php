@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Karyawan;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
+use App\Support\DemoData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -22,6 +23,14 @@ class KaryawanDashboardController extends Controller
             return $redirect;
         }
 
-        return view('karyawan.dashboard');
+        // Akun karyawan dicocokkan ke data employee lewat nama (nanti: employees.user_id).
+        $employee = collect(DemoData::employees())->firstWhere('name', $request->user()->name);
+
+        return view('karyawan.dashboard', [
+            'period' => DemoData::currentPeriod(),
+            'employee' => $employee,
+            'result' => $employee ? (DemoData::ranking()[$employee['id']] ?? null) : null,
+            'total' => count(DemoData::ranking()),
+        ]);
     }
 }

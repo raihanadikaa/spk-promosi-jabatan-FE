@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Direktur;
 
 use App\Http\Controllers\Concerns\EnforcesIdleTimeout;
 use App\Http\Controllers\Controller;
+use App\Support\DemoData;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -22,6 +23,9 @@ class DirekturDashboardController extends Controller
             return $redirect;
         }
 
-        return view('direktur.dashboard');
+        return view('direktur.dashboard', [
+            'period' => DemoData::currentPeriod(),
+            'ranking' => DemoData::ranking(),
+        ]);
     }
 }
