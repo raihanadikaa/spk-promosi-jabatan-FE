@@ -25,3 +25,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Berkas alat AI & referensi desain: jangan ikut repo
+/.agents/
+/.claude/
+/.figma-referensi/
+/.github/skills/
