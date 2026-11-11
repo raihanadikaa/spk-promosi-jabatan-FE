@@ -12,15 +12,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-surface">
-<div class="grid min-h-screen lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+<div class="grid min-h-screen bg-surface lg:grid-cols-[minmax(28rem,.92fr)_1.08fr]">
 
-    <main class="flex flex-col px-6 py-8 sm:px-12">
+    <main class="flex flex-col px-6 py-8 sm:px-12 lg:order-2 lg:px-16">
         <div class="flex items-center gap-2.5">
             <x-logo />
             <span class="text-md font-extrabold tracking-title">TalentRank</span>
         </div>
 
         <div class="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">
+            <p class="mb-2 text-sm font-semibold text-brand">Selamat datang</p>
             <h1 class="text-xl font-bold tracking-title">Masuk ke TalentRank</h1>
             <p class="mt-1 text-ink-muted">Gunakan email kantor yang terdaftar di HRD.</p>
 
@@ -100,15 +101,18 @@
         <p class="text-sm text-ink-faint">© {{ date('Y') }} Kelompok 2 · Sistem Informasi, Politeknik Negeri Subang</p>
     </main>
 
-    {{-- Panel kanan: memperlihatkan cara skor dibentuk, bukan ilustrasi dekoratif --}}
-    <aside class="relative hidden overflow-hidden bg-brand text-white lg:order-first lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24" aria-label="Cara skor dihitung">
-        <div class="max-w-lg">
-            <p class="text-md font-semibold text-white/70">Metode Simple Additive Weighting</p>
+    {{-- Panel metode SAW mengikuti komposisi login pada prototipe Figma. --}}
+    <aside class="relative hidden overflow-hidden bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#174867] text-white lg:order-1 lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24" aria-label="Cara skor dihitung">
+        <div class="pointer-events-none absolute -right-32 -top-32 size-[28rem] rounded-full border border-white/10 shadow-[0_0_0_5rem_rgba(255,255,255,0.025),0_0_0_10rem_rgba(255,255,255,0.018)]" aria-hidden="true"></div>
+        <div class="pointer-events-none absolute -bottom-36 -left-28 size-[22rem] rounded-full bg-teal-700/20 blur-sm" aria-hidden="true"></div>
+        <div class="relative z-10 max-w-lg">
+            <p class="text-sm font-semibold text-white/75">Sistem pendukung keputusan</p>
             <h2 class="mt-3 text-2xl font-bold leading-tight tracking-title">
-                Promosi diputuskan dari lima kriteria yang sama untuk semua karyawan.
+                Keputusan promosi yang lebih objektif dan transparan.
             </h2>
+            <p class="mt-4 leading-relaxed text-white/80">Kelola penilaian, telusuri perhitungan SAW, dan tinjau rekomendasi dalam satu alur yang terstruktur.</p>
 
-            <div class="mt-12">
+            <div class="mt-8">
                 <div class="flex h-4 w-full gap-1 overflow-hidden rounded-full" aria-hidden="true">
                     @foreach ($criteria as $c)
                         <span class="{{ $colors[$c['code']] }} h-full" style="width: {{ $c['weight'] }}%"></span>
@@ -126,9 +130,15 @@
                 <p class="mt-6 text-white/75">
                     Atasan mengisi nilai, sistem menormalisasi dan menjumlahkan sesuai bobot,
                     lalu direktur memutuskan dari rincian yang sama.
+
+                
                 </p>
+                <div class="mt-6 border-t border-white/20 pt-4">
+                    <p class="mt-1 text-sm text-white/75">Setiap skor dapat ditelusuri hingga nilai mentah dan bobotnya.</p>
+                </div>
             </div>
         </div>
+        <p class="absolute bottom-8 left-16 text-xs text-white/60 xl:left-24">TalentRank · SPK Promosi Jabatan</p>
     </aside>
 </div>
 </body>

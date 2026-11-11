@@ -20,12 +20,12 @@
 <body x-data="{ nav: false }" @keydown.escape.window="nav = false">
 <a href="#konten" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-ctl focus:bg-surface focus:px-4 focus:py-2">Lewati ke konten</a>
 
-<div class="min-h-screen lg:pl-64">
+<div class="min-h-screen bg-canvas lg:pl-64">
     {{-- Sidebar: tetap di desktop, drawer di layar kecil --}}
     <div x-show="nav" x-cloak x-transition.opacity class="fixed inset-0 z-30 bg-ink/40 lg:hidden" @click="nav = false"></div>
 
     <aside id="sidebar"
-           class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-line bg-surface transition-transform duration-200 ease-out lg:translate-x-0"
+           class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-line bg-surface shadow-sm transition-transform duration-200 ease-out lg:translate-x-0"
            :class="nav && '!translate-x-0'"
            aria-label="Navigasi utama">
         <div class="flex h-16 items-center gap-2.5 px-5">
@@ -101,7 +101,7 @@
         <span class="font-extrabold tracking-title">TalentRank</span>
     </header>
 
-    <main id="konten" class="mx-auto max-w-[1200px] px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-10">
+    <main id="konten" class="mx-auto max-w-[98rem] px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-8">
         <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div class="min-w-0">
                 @if ($back)
@@ -109,6 +109,11 @@
                         <x-icon name="chevron-left" class="size-4" /> {{ $back['label'] }}
                     </a>
                 @endif
+                <div class="mb-1.5 flex items-center gap-1.5 text-xs text-ink-faint">
+                    <span>SPK Promosi</span>
+                    <x-icon name="chevron-right" class="size-3" />
+                    <span class="font-semibold text-brand">{{ $title }}</span>
+                </div>
                 <h1 class="text-xl font-bold tracking-title text-ink">{{ $title }}</h1>
                 @if ($subtitle)<p class="mt-1 max-w-2xl text-ink-muted">{{ $subtitle }}</p>@endif
             </div>

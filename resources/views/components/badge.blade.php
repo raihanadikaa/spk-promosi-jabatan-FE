@@ -8,7 +8,7 @@
         'brand' => 'bg-brand-soft text-brand',
     ];
 @endphp
-<span {{ $attributes->merge(['class' => 'inline-flex items-center gap-1 whitespace-nowrap rounded-ctl px-2 py-0.5 text-sm font-semibold ' . $tones[$tone]]) }}>
+<span {{ $attributes->merge(['class' => 'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ' . $tones[$tone]]) }}>
     @if ($icon)<x-icon :name="$icon" class="size-3.5" />@endif
     {{ $slot }}
 </span>

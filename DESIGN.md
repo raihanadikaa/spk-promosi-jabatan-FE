@@ -27,35 +27,36 @@ Warna kriteria **hanya** untuk data kriteria. Jangan dipakai untuk tombol, statu
 
 Komponen: `<x-score-bar :parts="..."/>` dan `<x-criteria-dot code="C2"/>`.
 
-## 3. Warna dasar
+## 3. Warna dasar (mengikuti Figma Make)
 
 | Nama | Hex | Peran |
 |---|---|---|
-| Marun | `#7A1F2B` | Identitas (logo, tombol utama, item navigasi aktif). Diambil dari deck presentasi kelompok. |
-| Tinta | `#1A1D24` | Teks utama |
-| Abu teks | `#5A6170` | Teks sekunder, header tabel |
-| Garis | `#E2E5EA` | Border panel, pemisah baris |
-| Kanvas | `#F3F4F6` | Latar halaman (abu dingin, **bukan krem**) |
+| Biru | `#2563EB` | Identitas, tombol utama, fokus, dan item navigasi aktif. |
+| Biru gelap | `#0B1F33` → `#174867` | Gradien panel informasi halaman login. |
+| Tinta | `#1E293B` | Teks utama |
+| Abu teks | `#64748B` | Teks sekunder |
+| Garis | `#E2E8F0` | Border panel, pemisah baris |
+| Kanvas | `#F8FAFC` | Latar halaman |
 | Permukaan | `#FFFFFF` | Panel, tabel, form |
 
 Status (dipakai di badge, selalu dengan teks, tidak hanya warna):
 
 | Status | Teks | Latar |
 |---|---|---|
-| Disetujui / selesai | `#1D6B45` | `#E6F3EC` |
-| Menunggu / draft | `#8A5A00` | `#FBF1DC` |
-| Ditolak | `#A42A22` | `#FBE9E7` |
-| Netral / info | `#3B4250` | `#EEF0F3` |
+| Disetujui / selesai | `#0F766E` | `#CCFBF1` |
+| Menunggu / draft | `#B45309` | `#FEF3C7` |
+| Ditolak | `#B91C1C` | `#FEE2E2` |
+| Netral / info | `#475569` | `#F1F5F9` |
 
-Tombol tolak/hapus memakai merah status (`#A42A22`) dalam bentuk outline, supaya tidak tertukar dengan tombol utama marun.
+Tombol utama memakai biru; aksi destruktif memakai merah status dan selalu menyebut tindakan dengan jelas.
 
 ## 4. Tipografi
 
-- **Satu keluarga: Plus Jakarta Sans** (Google Fonts) — dirancang untuk identitas kota Jakarta, terasa lokal dan rapi untuk aplikasi kantor.
+- **Keluarga acuan Figma: Manrope.** Aplikasi memakai font lokal yang sudah dibundel sebagai fallback agar tampilan tidak bergantung pada layanan font pihak ketiga.
 - Angka di tabel & skor: `tabular-nums` (class `num`), bukan font monospace.
 - Skala (px): 12 / 13 / 14 (body) / 16 / 20 / 26 (judul halaman) / 34 (angka sorotan).
 - Judul halaman: 26px, weight 700, letter-spacing −0.02em.
-- **Sentence case** di mana-mana: judul, label, header tabel, tombol. Tidak ada label ALL CAPS, tidak ada eyebrow kecil di atas setiap judul.
+- Sentence case untuk judul, label, dan tombol. Header tabel mengikuti gaya uppercase ringkas pada prototipe.
 
 ## 5. Layout
 
@@ -64,7 +65,7 @@ Tombol tolak/hapus memakai merah status (`#A42A22`) dalam bentuk outline, supaya
 │ TalentRank  │  Judul halaman                 [Aksi utama]   │
 │          │  Satu kalimat keterangan                      │
 │ Navigasi │ ─────────────────────────────────────────────  │
-│ per role │  Konten (maks 1200px, rata kiri)              │
+│ per role │  Konten (maks 98rem, rata kiri)               │
 │          │                                               │
 │ ──────── │                                               │
 │ Periode  │                                               │
@@ -72,16 +73,16 @@ Tombol tolak/hapus memakai merah status (`#A42A22`) dalam bentuk outline, supaya
 └──────────┴───────────────────────────────────────────────┘
 ```
 
-- Sidebar putih 256px, item aktif ditandai garis marun 3px di kiri + teks marun. Di layar < 1024px sidebar jadi drawer.
+- Sidebar putih 256px, item aktif memakai latar biru muda, teks biru, dan garis biru 3px di kiri. Di layar < 1024px sidebar jadi drawer.
 - Konten rata kiri. Angka di tabel rata kanan.
 - Spasi kelipatan 4px. Jarak antar seksi 32px, antar elemen dalam panel 16px.
 
 ## 6. Bentuk & kedalaman
 
-- Radius bertingkat: kontrol (input, tombol, badge) **6px**; panel **10px**; tidak ada yang bulat penuh kecuali avatar.
-- Panel dibedakan dengan border 1px `Garis`, **tanpa shadow**. Shadow hanya untuk elemen yang benar-benar melayang (dropdown, modal, drawer).
-- Tidak ada gradient dekoratif, tidak ada glassmorphism/blur.
-- Jangan pecah semua konten jadi kartu yang seragam. Data tabular → tabel. Ringkasan angka → satu strip ringkasan, bukan 4 kartu identik.
+- Radius acuan Figma: kontrol **8px**, panel **12px**, badge berbentuk pil, avatar bulat.
+- Panel memakai border 1px `Garis` dan shadow tipis; overlay memakai shadow lebih kuat.
+- Gradien hanya untuk panel cerita login; jangan gunakan sebagai dekorasi pada halaman kerja.
+- Ringkasan angka memakai kartu terpisah; data tabular tetap memakai tabel.
 
 ## 7. Gerak
 
@@ -100,7 +101,7 @@ Tombol tolak/hapus memakai merah status (`#A42A22`) dalam bentuk outline, supaya
 ## 9. Aksesibilitas (batas minimum)
 
 - Kontras teks ≥ 4.5:1.
-- Fokus keyboard selalu terlihat: ring 2px marun dengan offset 2px.
+- Fokus keyboard selalu terlihat: ring 2px biru dengan offset 2px.
 - Status tidak boleh hanya warna — selalu ada teks.
 - Semua input punya `<label>`.
 
@@ -115,8 +116,8 @@ Tombol tolak/hapus memakai merah status (`#A42A22`) dalam bentuk outline, supaya
 | `<x-score-bar>` | Bar komposisi skor 5 kriteria |
 | `<x-criteria-dot>` | Penanda warna kriteria |
 | `<x-icon>` | Ikon garis (set Lucide, inline SVG) |
-| `<x-stat-strip>` | Strip ringkasan angka |
+| `<x-stat-strip>` | Kartu ringkasan angka responsif |
 
 ## 11. Data
 
-Selama backend belum tersambung, data contoh ada di `app/Support/DemoData.php` dan perhitungan SAW asli di `app/Services/SawCalculator.php`. Angka di semua halaman dihitung, bukan diketik manual, sehingga konsisten. Saat backend siap, ganti sumber data di `DemoData` tanpa mengubah view.
+Halaman membaca data melalui `app/Queries/PromotionData.php`; kalkulasi SAW berada di `app/Services/SawCalculator.php` dan layanan terkait. View harus menampilkan data aplikasi, bukan menyalin angka contoh prototipe.

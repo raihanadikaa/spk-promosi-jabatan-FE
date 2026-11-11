@@ -6,11 +6,11 @@
         'md' => 'h-10 px-4 text-base',
     ];
     $variants = [
-        'primary' => 'bg-brand text-white hover:bg-brand-hover',
+        'primary' => 'bg-brand text-white shadow-sm hover:bg-brand-hover',
         'secondary' => 'border border-line-strong bg-surface text-ink hover:bg-canvas',
         'ghost' => 'text-ink-muted hover:bg-canvas hover:text-ink',
-        'danger' => 'border border-bad/40 bg-surface text-bad hover:bg-bad-bg',
-        'success' => 'bg-ok text-white hover:bg-ok/90',
+        'danger' => 'bg-bad text-white shadow-sm hover:bg-bad/90',
+        'success' => 'bg-ok text-white shadow-sm hover:bg-ok/90',
     ];
     $classes = "$base {$sizes[$size]} {$variants[$variant]}";
 @endphp
