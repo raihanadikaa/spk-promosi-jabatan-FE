@@ -17,12 +17,21 @@
         </x-slot:actions>
     @endif
 
-    <x-stat-strip class="mb-6" :items="[
-        ['label' => 'Terkirim', 'value' => $counts['submitted'], 'hint' => $pct($counts['submitted']) . '% dari ' . $counts['total']],
-        ['label' => 'Draft', 'value' => $counts['draft'], 'hint' => 'sudah mulai diisi'],
-        ['label' => 'Belum dinilai', 'value' => $counts['pending'], 'hint' => 'perlu ditindaklanjuti'],
-        ['label' => 'Batas penilaian', 'value' => Format::date($period['deadline']), 'hint' => $period['status'] === 'ongoing' ? Format::daysLeft($period['deadline']) . ' hari lagi' : 'periode ' . ($period['status'] === 'closed' ? 'ditutup' : 'belum dimulai')],
-    ]" />
+    @php
+        $daysLeft = Format::daysLeft($period['deadline']);
+        $deadlineHint = match (true) {
+            $period['status'] === 'closed' => 'Periode ditutup',
+            $period['status'] !== 'ongoing' => 'Periode belum dimulai',
+            $daysLeft < 0 => 'Sudah lewat ' . abs($daysLeft) . ' hari',
+            default => $daysLeft . ' hari lagi',
+        };
+    @endphp
+    <section class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan kelengkapan penilaian">
+        <x-stat-card label="Terkirim" :value="$counts['submitted'] . ' / ' . $counts['total']" :hint="$pct($counts['submitted']) . '% sudah lengkap'" icon="check-circle" tone="ok" />
+        <x-stat-card label="Draft" :value="$counts['draft']" hint="Sudah mulai diisi" icon="pencil" tone="warn" />
+        <x-stat-card label="Belum dinilai" :value="$counts['pending']" hint="Perlu ditindaklanjuti" icon="clipboard" :tone="$counts['pending'] ? 'bad' : 'info'" />
+        <x-stat-card label="Batas penilaian" :value="Format::date($period['deadline'])" :hint="$deadlineHint" icon="calendar" :tone="$period['status'] === 'ongoing' && $daysLeft < 0 ? 'bad' : 'brand'" />
+    </section>
 
     @unless ($canRemind)
         <div class="mb-4 flex items-start gap-3 rounded-panel border border-line bg-info-bg px-4 py-3 text-sm text-info">

@@ -5,12 +5,12 @@
         <x-btn variant="secondary" icon="download" :href="route('direktur.ranking.export')">Unduh CSV</x-btn>
     </x-slot:actions>
 
-    <x-stat-strip class="mb-6" :items="[
-        ['label' => 'Menunggu keputusan', 'value' => $counts['pending']],
-        ['label' => 'Disetujui', 'value' => $counts['approved']],
-        ['label' => 'Ditolak', 'value' => $counts['rejected']],
-        ['label' => 'Review ulang HRD', 'value' => $counts['revision']],
-    ]" />
+    <section class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan keputusan">
+        <x-stat-card label="Menunggu keputusan" :value="$counts['pending']" :hint="$counts['pending'] ? 'Perlu Anda tinjau' : 'Tidak ada antrean'" icon="clock" tone="warn" />
+        <x-stat-card label="Disetujui" :value="$counts['approved']" hint="Promosi disetujui" icon="check-circle" tone="ok" />
+        <x-stat-card label="Ditolak" :value="$counts['rejected']" hint="Dengan catatan alasan" icon="x-circle" tone="bad" />
+        <x-stat-card label="Review ulang HRD" :value="$counts['revision']" hint="Dikembalikan ke HRD" icon="refresh" tone="brand" />
+    </section>
 
     @if (! $open)
         <div class="mb-4 flex items-start gap-3 rounded-panel border border-line bg-info-bg px-4 py-3 text-sm text-info">
@@ -46,8 +46,13 @@
                         @foreach ($rows as $row)
                             <tr>
                                 <td>
-                                    <p class="font-semibold">{{ $row['name'] }}</p>
-                                    <p class="text-sm text-ink-muted">{{ $row['department'] }}</p>
+                                    <div class="flex items-center gap-3">
+                                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand" aria-hidden="true">{{ collect(explode(' ', $row['name']))->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode('') }}</span>
+                                        <div class="min-w-0">
+                                            <p class="font-semibold">{{ $row['name'] }}</p>
+                                            <p class="text-sm text-ink-muted">{{ $row['department'] }}</p>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="num text-right font-semibold">#{{ $row['rank'] }}</td>
                                 <td class="num text-right font-semibold">{{ Format::score($row['score']) }}</td>
