@@ -279,6 +279,11 @@ class HrdController extends Controller
         return $this->exportCsv();
     }
 
+    public function report(): View
+    {
+        return $this->reportView('hrd.ranking');
+    }
+
     /**
      * Jejak perhitungan SAW lengkap untuk dicek ulang di Excel:
      * baris bobot W, lalu tiap alternatif: matriks X (mentah), R (ternormalisasi), dan V (Σ w·r).

@@ -281,6 +281,21 @@ class BackendFeaturesTest extends TestCase
         $this->assertModelMissing($c6);
     }
 
+    /* ---------------- Laporan cetak ---------------- */
+
+    public function test_laporan_ranking_siap_cetak_untuk_hrd_dan_direktur(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $this->actingAs($hrd)->post('/hrd/proses-saw')->assertSessionHasNoErrors();
+        $top = RankingResult::where('period_id', $this->period()->id)->where('rank', 1)->firstOrFail()->employee;
+
+        $this->actingAs($this->as('hrd@talentrank.test'))->get('/hrd/ranking/laporan')->assertOk()
+            ->assertSee('Laporan hasil ranking promosi jabatan')->assertSee($top->name)->assertSee('Cetak / simpan PDF');
+        $this->actingAs($this->as('direktur@talentrank.test'))->get('/direktur/ranking/laporan')->assertOk()->assertSee($top->name);
+        $this->actingAs($this->as('atasan@talentrank.test'))->get('/hrd/ranking/laporan')->assertForbidden();
+        $this->actingAs($this->as('hrd@talentrank.test'))->get('/hrd/ranking')->assertOk()->assertSee('Laporan PDF');
+    }
+
     /* ---------------- Riwayat karyawan ---------------- */
 
     public function test_karyawan_melihat_riwayat_periode_yang_sudah_ditutup(): void

@@ -72,4 +72,9 @@ class DirekturController extends Controller
     {
         return $this->exportCsv();
     }
+
+    public function report(): View
+    {
+        return $this->reportView('direktur.ranking');
+    }
 }
