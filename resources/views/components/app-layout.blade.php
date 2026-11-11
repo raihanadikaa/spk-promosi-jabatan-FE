@@ -6,6 +6,8 @@
     $period = \App\Queries\PromotionData::currentPeriod();
     $roleLabel = \App\Queries\PromotionData::roleLabels()[$role] ?? $role;
     $initials = collect(explode(' ', $user->name))->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode('');
+    $unreadCount = $user->unreadNotifications()->count();
+    $unread = $unreadCount ? $user->unreadNotifications()->latest()->limit(6)->get() : collect();
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -50,6 +52,36 @@
                 <p class="text-xs text-ink-muted">Periode</p>
                 <p class="text-sm font-semibold text-ink">Belum ada periode</p>
             @endif
+        </div>
+
+        {{-- Notifikasi: pengingat penilaian, permintaan review ulang, dsb. --}}
+        <div class="relative mx-3 mb-1" x-data="{ bell: false }" @click.outside="bell = false" @keydown.escape="bell = false">
+            <button type="button" @click="bell = !bell" :aria-expanded="bell" aria-controls="notif-panel"
+                    class="flex h-10 w-full items-center gap-3 rounded-ctl px-3 text-base text-ink-muted transition-colors hover:bg-canvas hover:text-ink">
+                <x-icon name="bell" />
+                Notifikasi
+                @if ($unreadCount)
+                    <span class="num ml-auto rounded-full bg-bad px-2 py-0.5 text-xs font-bold text-white">{{ $unreadCount > 99 ? '99+' : $unreadCount }}<span class="sr-only"> belum dibaca</span></span>
+                @endif
+            </button>
+            <div id="notif-panel" x-show="bell" x-cloak x-transition.opacity
+                 class="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-panel border border-line bg-surface shadow-[0_8px_24px_rgba(26,29,36,0.14)]">
+                @forelse ($unread as $n)
+                    <a href="{{ route('notifications.open', $n->id) }}" class="block border-b border-line px-4 py-3 last:border-b-0 hover:bg-canvas">
+                        <p class="text-sm font-semibold text-ink">{{ $n->data['title'] ?? 'Notifikasi' }}</p>
+                        <p class="mt-0.5 line-clamp-3 text-xs text-ink-muted">{{ $n->data['body'] ?? '' }}</p>
+                        <p class="mt-1 text-xs text-ink-faint">{{ $n->created_at->diffForHumans() }}</p>
+                    </a>
+                @empty
+                    <p class="px-4 py-5 text-center text-sm text-ink-muted">Tidak ada notifikasi baru.</p>
+                @endforelse
+                @if ($unreadCount)
+                    <form method="POST" action="{{ route('notifications.read-all') }}" class="border-t border-line bg-canvas px-4 py-2 text-right">
+                        @csrf
+                        <button type="submit" class="text-xs font-semibold text-brand hover:underline">Tandai semua dibaca</button>
+                    </form>
+                @endif
+            </div>
         </div>
 
         <nav class="flex-1 overflow-y-auto px-3 py-2">

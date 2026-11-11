@@ -92,17 +92,29 @@
             <x-panel title="Status rekomendasi">
                 @if (! $row['recommended'])
                     <p class="text-ink-muted">Tidak masuk {{ \App\Queries\PromotionData::RECOMMENDED_COUNT }} besar, sehingga tidak diajukan untuk promosi periode ini.</p>
+                @elseif ($row['approval_status'] === 'revision')
+                    <x-status value="revision" />
+                    <p class="mt-3 text-ink">{{ $row['approval_note'] }}</p>
+                    <p class="mt-2 text-sm text-ink-muted">Diminta {{ $row['approval_by'] ? 'oleh ' . $row['approval_by'] . ', ' : '' }}{{ Format::dateTime($row['approval_at']) }}</p>
+                    @if (auth()->user()->hasRole('hrd'))
+                        <p class="mt-3 text-sm text-ink-muted">Tindak lanjut: buka kembali penilaiannya di halaman Karyawan bila perlu dikoreksi atasan, lalu hitung ulang di Proses SAW. Setelah dihitung ulang, kandidat kembali menunggu keputusan direktur.</p>
+                    @else
+                        <p class="mt-3 text-sm text-ink-muted">Menunggu HRD meninjau dan menghitung ulang ranking.</p>
+                    @endif
                 @elseif ($row['approval_status'] !== 'pending')
                     <x-status :value="$status" />
                     <p class="mt-3 text-ink">{{ $row['approval_note'] ?: 'Tanpa catatan.' }}</p>
                     <p class="mt-2 text-sm text-ink-muted">Diputuskan {{ $row['approval_by'] ? 'oleh ' . $row['approval_by'] . ', ' : '' }}{{ Format::dateTime($row['approval_at']) }}</p>
                 @elseif ($canDecide)
                     <form method="POST" action="{{ route('direktur.ranking.decide', $row['id']) }}" class="space-y-4" novalidate
-                          x-data @submit="if (!confirm($event.submitter?.value === 'approve'
-                                ? {{ \Illuminate\Support\Js::from('Setujui promosi ' . $row['name'] . '? Keputusan tidak bisa diubah.') }}
-                                : {{ \Illuminate\Support\Js::from('Tolak rekomendasi promosi ' . $row['name'] . '?') }})) $event.preventDefault()">
+                          x-data="{ msg: {{ \Illuminate\Support\Js::from([
+                                'approve' => 'Setujui promosi ' . $row['name'] . '? Keputusan tidak bisa diubah.',
+                                'reject' => 'Tolak rekomendasi promosi ' . $row['name'] . '?',
+                                'revision' => 'Kembalikan ' . $row['name'] . ' ke HRD untuk ditinjau ulang?',
+                          ]) }} }" @submit="if (!confirm(msg[$event.submitter?.value] ?? msg.reject)) $event.preventDefault()">
                         @csrf
                         <p class="text-ink-muted">Direkomendasikan sistem berdasarkan peringkat. Keputusan akhir ada di Anda.</p>
+                        <p class="text-sm"><span class="text-ink-muted">Usulan jabatan:</span> <strong>{{ $row['proposed_position'] ?? 'Sudah jabatan tertinggi' }}</strong></p>
                         <div>
                             <label for="note" class="field-label">Catatan keputusan</label>
                             <textarea id="note" name="note" rows="4" maxlength="1000"
@@ -112,12 +124,13 @@
                             @error('note')
                                 <p id="note-error" class="field-error">{{ $message }}</p>
                             @else
-                                <p class="field-help">Wajib diisi jika menolak.</p>
+                                <p class="field-help">Wajib diisi jika menolak atau minta review ulang.</p>
                             @enderror
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <x-btn type="submit" name="decision" value="reject" variant="danger" icon="x">Tolak</x-btn>
                             <x-btn type="submit" name="decision" value="approve" variant="success" icon="check">Setujui promosi</x-btn>
+                            <x-btn type="submit" name="decision" value="revision" variant="secondary" icon="refresh" class="col-span-2">Minta review ulang HRD</x-btn>
                         </div>
                     </form>
                 @else

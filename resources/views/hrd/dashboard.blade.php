@@ -9,7 +9,7 @@
 <x-app-layout title="Dashboard HRD"
               subtitle="Pantau progres penilaian {{ $period['name'] }} dan lanjutkan pekerjaan prioritas.">
     <x-slot:actions>
-        <x-btn variant="secondary" :href="route('hrd.employees', ['status' => 'unfinished'])" icon="clipboard">Monitor penilaian</x-btn>
+        <x-btn variant="secondary" :href="route('hrd.monitor', ['status' => 'unfinished'])" icon="clipboard">Monitor penilaian</x-btn>
         @if ($open)
             <form method="POST" action="{{ route('hrd.saw.run') }}">
                 @csrf
