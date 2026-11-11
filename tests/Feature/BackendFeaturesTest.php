@@ -199,6 +199,48 @@ class BackendFeaturesTest extends TestCase
         $this->actingAs($this->as('direktur@talentrank.test'))->get('/hrd/proses-saw/matriks')->assertForbidden();
     }
 
+    /* ---------------- Salin bobot & impor karyawan ---------------- */
+
+    public function test_salin_bobot_dari_periode_sebelumnya(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $period = $this->period();
+        $previous = $period->previous();
+        $period->weights()->update(['weight_value' => 20]);
+
+        $this->actingAs($hrd)->post('/hrd/kriteria/salin')->assertSessionHasNoErrors();
+
+        $this->assertEquals(
+            $previous->weights()->pluck('weight_value', 'criteria_id')->all(),
+            $period->weights()->pluck('weight_value', 'criteria_id')->all(),
+        );
+    }
+
+    public function test_impor_karyawan_csv_semua_atau_tidak_sama_sekali(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $dept = Department::firstOrFail()->department_name;
+        $pos = Position::firstOrFail()->position_name;
+        $before = Employee::count();
+        $csv = fn (string $body) => \Illuminate\Http\UploadedFile::fake()->createWithContent('karyawan.csv', "nama;nik;departemen;jabatan;tanggal_bergabung;email_atasan\n" . $body);
+
+        $this->actingAs($hrd)->get('/hrd/karyawan/templat')->assertOk();
+
+        // Satu baris salah → tidak ada yang disimpan.
+        $this->actingAs($hrd)->post('/hrd/karyawan/impor', ['file' => $csv("Budi Baru;3299000001;{$dept};{$pos};2023-02-01;\nSalah Dept;3299000002;Tidak Ada;{$pos};2023-02-01;\n")])
+            ->assertSessionHasErrors('file');
+        $this->assertSame($before, Employee::count());
+
+        $this->actingAs($hrd)->post('/hrd/karyawan/impor', ['file' => $csv("Budi Baru;3299000001;{$dept};{$pos};2023-02-01;atasan@talentrank.test\nCici Baru;3299000003;{$dept};{$pos};15-03-2022;\n")])
+            ->assertSessionHasNoErrors();
+        $this->assertSame($before + 2, Employee::count());
+        $this->assertSame($this->as('atasan@talentrank.test')->id, Employee::where('nik', '3299000001')->value('supervisor_id'));
+        $this->assertSame('2022-03-15', Employee::where('nik', '3299000003')->firstOrFail()->join_date->toDateString());
+
+        // NIK yang sudah ada ditolak.
+        $this->actingAs($hrd)->post('/hrd/karyawan/impor', ['file' => $csv("Dobel;3299000001;{$dept};{$pos};2023-02-01;\n")])->assertSessionHasErrors('file');
+    }
+
     /* ---------------- Riwayat karyawan ---------------- */
 
     public function test_karyawan_melihat_riwayat_periode_yang_sudah_ditutup(): void

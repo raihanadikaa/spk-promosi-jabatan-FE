@@ -109,6 +109,8 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
     Route::get('/karyawan', [HrdController::class, 'employees'])->name('employees');
     Route::post('/karyawan', [HrdController::class, 'storeEmployee'])->name('employees.store');
     Route::put('/karyawan/{employee}', [HrdController::class, 'updateEmployee'])->name('employees.update');
+    Route::post('/karyawan/impor', [HrdController::class, 'importEmployees'])->middleware('throttle:10,1')->name('employees.import');
+    Route::get('/karyawan/templat', [HrdController::class, 'employeeTemplate'])->name('employees.template');
 
     Route::get('/periode', [HrdController::class, 'periods'])->name('periods');
     Route::post('/periode', [HrdController::class, 'storePeriod'])->name('periods.store');
@@ -132,6 +134,7 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
 
     Route::get('/kriteria', [HrdController::class, 'criteria'])->name('criteria');
     Route::put('/kriteria', [HrdController::class, 'updateWeights'])->name('criteria.update');
+    Route::post('/kriteria/salin', [HrdController::class, 'copyWeights'])->name('criteria.copy');
 
     Route::get('/proses-saw', [HrdController::class, 'saw'])->name('saw');
     Route::get('/proses-saw/matriks', [HrdController::class, 'exportMatrix'])->name('saw.export');

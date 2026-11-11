@@ -15,6 +15,7 @@ use App\Models\Employee;
 use App\Models\User;
 use App\Queries\PromotionData;
 use App\Services\AssessmentService;
+use App\Services\EmployeeImportService;
 use App\Services\PeriodService;
 use App\Services\RankingService;
 use Illuminate\Http\RedirectResponse;
@@ -70,6 +71,31 @@ class HrdController extends Controller
         $employee->update($request->validated() + ['is_active' => $request->boolean('is_active')]);
 
         return to_route('hrd.employees')->with('success', "Data {$employee->name} diperbarui.");
+    }
+
+    /** Impor banyak karyawan sekaligus dari CSV. Semua baris harus valid, kalau tidak dibatalkan seluruhnya. */
+    public function importEmployees(Request $request, EmployeeImportService $import): RedirectResponse
+    {
+        $request->validate(
+            ['file' => ['required', 'file', 'max:1024', 'mimes:csv,txt']],
+            ['file.mimes' => 'Berkas harus CSV.', 'file.max' => 'Ukuran berkas maksimal 1 MB.'],
+            ['file' => 'berkas'],
+        );
+
+        $count = $import->import($request->file('file')->getRealPath());
+
+        return to_route('hrd.employees')->with('success', "{$count} karyawan ditambahkan dari berkas.");
+    }
+
+    public function employeeTemplate(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, EmployeeImportService::HEADER, ';');
+            fputcsv($out, ['Contoh Nama', '3201990101', array_values(PromotionData::departments())[0] ?? 'Operasional', array_values(PromotionData::positions())[0] ?? 'Staf', '2022-01-17', ''], ';');
+            fclose($out);
+        }, 'templat-karyawan.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /* ---------------- Periode ---------------- */
@@ -139,6 +165,7 @@ class HrdController extends Controller
             'criteria' => PromotionData::criteria($period['id']),
             'period' => $period,
             'editable' => $period['status'] !== AssessmentPeriod::CLOSED,
+            'previousName' => $model->previous()?->period_name,
         ]);
     }
 
@@ -165,6 +192,31 @@ class HrdController extends Controller
         });
 
         return to_route('hrd.criteria')->with('success', 'Bobot kriteria disimpan. Hitung ulang ranking agar hasilnya ikut berubah.');
+    }
+
+    /** Salin bobot dari periode sebelumnya ke periode yang sedang diatur. */
+    public function copyWeights(): RedirectResponse
+    {
+        $period = PromotionData::weightsPeriodModel();
+        if (! $period || $period->status === AssessmentPeriod::CLOSED) {
+            throw ValidationException::withMessages(['criteria' => 'Bobot periode yang sudah ditutup tidak bisa diubah.']);
+        }
+        $previous = $period->previous();
+        $weights = $previous?->weights()->pluck('weight_value', 'criteria_id') ?? collect();
+        if ($weights->isEmpty()) {
+            throw ValidationException::withMessages(['criteria' => 'Belum ada periode sebelumnya yang bobotnya bisa disalin.']);
+        }
+
+        DB::transaction(function () use ($period, $weights) {
+            foreach (Criterion::pluck('id') as $criteriaId) {
+                CriteriaWeight::updateOrCreate(
+                    ['period_id' => $period->id, 'criteria_id' => $criteriaId],
+                    ['weight_value' => (int) ($weights[$criteriaId] ?? 0)],
+                );
+            }
+        });
+
+        return to_route('hrd.criteria')->with('success', "Bobot disalin dari {$previous->period_name}. Hitung ulang ranking agar hasilnya ikut berubah.");
     }
 
     /* ---------------- Proses SAW ---------------- */
