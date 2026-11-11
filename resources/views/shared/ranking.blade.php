@@ -11,6 +11,7 @@
     @if ($exportRoute && $hasAny)
         <x-slot:actions>
             <x-btn variant="secondary" icon="download" :href="route($exportRoute)">Unduh CSV</x-btn>
+            <x-btn variant="secondary" icon="clipboard" :href="route(str_replace('.export', '.report', $exportRoute))">Laporan PDF</x-btn>
         </x-slot:actions>
     @endif
 

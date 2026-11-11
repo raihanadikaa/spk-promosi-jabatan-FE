@@ -78,3 +78,9 @@
         animation-duration: 0.01ms !important;
     }
 }
+
+/* Laporan cetak: margin kertas, dan warna latar badge/garis tetap tercetak. */
+@media print {
+    @page { size: A4 portrait; margin: 14mm; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
