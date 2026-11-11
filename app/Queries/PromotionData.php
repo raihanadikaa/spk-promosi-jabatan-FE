@@ -372,7 +372,7 @@ class PromotionData
     /**
      * Jumlah kandidat per status keputusan.
      *
-     * @return array{recommended:int, pending:int, approved:int, rejected:int}
+     * @return array{recommended:int, pending:int, approved:int, rejected:int, revision:int}
      */
     public static function approvalCounts(?array $period): array
     {
@@ -386,7 +386,16 @@ class PromotionData
             'pending' => (int) ($counts['pending'] ?? 0),
             'approved' => (int) ($counts['approved'] ?? 0),
             'rejected' => (int) ($counts['rejected'] ?? 0),
+            'revision' => (int) ($counts['revision'] ?? 0),
         ];
+    }
+
+    /** Usulan jabatan promosi: jabatan dengan level terdekat di atas jabatan sekarang (null jika sudah tertinggi). */
+    public static function nextPosition(int $level): ?string
+    {
+        $positions = self::memo('positions.by-level', fn () => Position::orderBy('level')->orderBy('position_name')->get(['position_name', 'level']));
+
+        return $positions->first(fn ($p) => $p->level > $level)?->position_name;
     }
 
     public static function rankingCount(?array $period): int
@@ -448,6 +457,7 @@ class PromotionData
                 'nik' => $e->nik,
                 'department' => $e->department->department_name,
                 'position' => $e->position->position_name,
+                'proposed_position' => self::nextPosition($e->position->level),
                 'join_date' => $e->join_date->toDateString(),
                 'tenure' => $e->tenureAt($end),
                 'assessor' => $e->supervisor?->name ?? '–',

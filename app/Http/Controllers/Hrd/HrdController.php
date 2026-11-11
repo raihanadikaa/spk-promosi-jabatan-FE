@@ -111,6 +111,20 @@ class HrdController extends Controller
         return to_route('hrd.periods')->with('success', "Periode {$period->period_name} ditutup. Nilai dan bobot sekarang terkunci.");
     }
 
+    public function updatePeriod(StorePeriodRequest $request, AssessmentPeriod $period, PeriodService $periods): RedirectResponse
+    {
+        $periods->update($period, $request->validated());
+
+        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} diperbarui.");
+    }
+
+    public function destroyPeriod(AssessmentPeriod $period, PeriodService $periods): RedirectResponse
+    {
+        $periods->delete($period);
+
+        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} dihapus.");
+    }
+
     /* ---------------- Kriteria & bobot ---------------- */
 
     public function criteria(): View
@@ -210,5 +224,46 @@ class HrdController extends Controller
     public function export(): StreamedResponse
     {
         return $this->exportCsv();
+    }
+
+    /**
+     * Jejak perhitungan SAW lengkap untuk dicek ulang di Excel:
+     * baris bobot W, lalu tiap alternatif: matriks X (mentah), R (ternormalisasi), dan V (Σ w·r).
+     */
+    public function exportMatrix(): StreamedResponse
+    {
+        $period = PromotionData::currentPeriod() ?? abort(404);
+        $criteria = PromotionData::criteria($period['id']);
+        $num = fn ($v, $d = 4) => number_format((float) $v, $d, ',', '');
+        $safe = fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v;
+
+        return response()->streamDownload(function () use ($period, $criteria, $num, $safe) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            $codes = array_column($criteria, 'code');
+
+            fputcsv($out, ['Periode', $safe($period['name'])], ';');
+            fputcsv($out, array_merge(['Bobot W', '', ''], array_map(fn ($c) => $num($c['weight'] / 100, 2), $criteria), [''], array_map(fn ($c) => $c['type'], $criteria)), ';');
+            fputcsv($out, array_merge(
+                ['Alternatif', 'Nama', 'NIK'],
+                array_map(fn ($c) => "X {$c}", $codes),
+                [''],
+                array_map(fn ($c) => "R {$c}", $codes),
+                ['V (skor)', 'Peringkat'],
+            ), ';');
+
+            PromotionData::rankingQuery($period)->chunk(200, function ($results) use ($out, $period, $codes, $num, $safe) {
+                foreach (PromotionData::rankingRows($results, $period) as $row) {
+                    fputcsv($out, array_map($safe, array_merge(
+                        ['A' . $row['rank'], $row['name'], $row['nik']],
+                        array_map(fn ($c) => $num($row['raw'][$c] ?? 0, 2), $codes),
+                        [''],
+                        array_map(fn ($c) => $num($row['normalized'][$c] ?? 0), $codes),
+                        [$num($row['score']), $row['rank']],
+                    )), ';');
+                }
+            });
+            fclose($out);
+        }, 'matriks-saw-' . str($period['name'])->slug() . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

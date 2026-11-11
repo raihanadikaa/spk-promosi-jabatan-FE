@@ -11,6 +11,9 @@ class RankingResult extends Model
     public const APPROVED = 'approved';
     public const REJECTED = 'rejected';
 
+    /** Direktur minta HRD meninjau ulang. Belum final: hitung ulang ranking mengembalikannya ke pending. */
+    public const REVISION = 'revision';
+
     protected $fillable = [
         'employee_id', 'period_id', 'final_score', 'rank', 'is_recommended',
         'approval_status', 'approved_by', 'approval_note', 'approved_at',

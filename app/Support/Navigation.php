@@ -17,9 +17,11 @@ class Navigation
             'hrd' => [
                 ['label' => 'Beranda', 'route' => 'hrd.dashboard', 'icon' => 'home'],
                 ['label' => 'Karyawan', 'route' => 'hrd.employees', 'icon' => 'id-card'],
+                ['label' => 'Departemen & jabatan', 'route' => 'hrd.organization', 'icon' => 'building'],
                 ['label' => 'Periode penilaian', 'route' => 'hrd.periods', 'icon' => 'calendar'],
                 ['label' => 'Kriteria & bobot', 'route' => 'hrd.criteria', 'icon' => 'sliders'],
-                ['label' => 'Proses SAW', 'route' => 'hrd.saw', 'icon' => 'calculator'],
+                ['label' => 'Monitor penilaian', 'route' => 'hrd.monitor', 'icon' => 'clipboard'],
+                ['label' => 'Proses SAW', 'route' => 'hrd.saw', 'icon' => 'calculator', 'match' => 'hrd.saw*'],
                 ['label' => 'Ranking', 'route' => 'hrd.ranking', 'icon' => 'trophy', 'match' => 'hrd.ranking*'],
             ],
             'manager' => [
@@ -29,7 +31,8 @@ class Navigation
             ],
             'direktur' => [
                 ['label' => 'Beranda', 'route' => 'direktur.dashboard', 'icon' => 'home'],
-                ['label' => 'Ranking & rekomendasi', 'route' => 'direktur.ranking', 'icon' => 'trophy', 'match' => 'direktur.ranking*'],
+                ['label' => 'Ranking', 'route' => 'direktur.ranking', 'icon' => 'trophy', 'match' => 'direktur.ranking*'],
+                ['label' => 'Persetujuan promosi', 'route' => 'direktur.approvals', 'icon' => 'check-circle'],
             ],
             'karyawan' => [
                 ['label' => 'Skor saya', 'route' => 'karyawan.dashboard', 'icon' => 'user'],

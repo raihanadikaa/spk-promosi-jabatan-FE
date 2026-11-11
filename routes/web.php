@@ -8,9 +8,12 @@ use App\Http\Controllers\Direktur\DirekturController;
 use App\Http\Controllers\Direktur\DirekturDashboardController;
 use App\Http\Controllers\Hrd\HrdController;
 use App\Http\Controllers\Hrd\HrdDashboardController;
+use App\Http\Controllers\Hrd\MonitorController;
+use App\Http\Controllers\Hrd\OrganizationController;
 use App\Http\Controllers\Karyawan\KaryawanDashboardController;
 use App\Http\Controllers\Manager\ManagerController;
 use App\Http\Controllers\Manager\ManagerDashboardController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -88,6 +91,8 @@ Route::pattern('employee', '[0-9]+');
 Route::pattern('period', '[0-9]+');
 Route::pattern('assessment', '[0-9]+');
 Route::pattern('user', '[0-9]+');
+Route::pattern('department', '[0-9]+');
+Route::pattern('position', '[0-9]+');
 
 Route::middleware(['auth', 'idle', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
@@ -109,11 +114,27 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
     Route::post('/periode', [HrdController::class, 'storePeriod'])->name('periods.store');
     Route::post('/periode/{period}/mulai', [HrdController::class, 'activatePeriod'])->name('periods.activate');
     Route::post('/periode/{period}/tutup', [HrdController::class, 'closePeriod'])->name('periods.close');
+    Route::put('/periode/{period}', [HrdController::class, 'updatePeriod'])->name('periods.update');
+    Route::delete('/periode/{period}', [HrdController::class, 'destroyPeriod'])->name('periods.destroy');
+
+    Route::get('/organisasi', [OrganizationController::class, 'index'])->name('organization');
+    Route::post('/departemen', [OrganizationController::class, 'storeDepartment'])->name('departments.store');
+    Route::put('/departemen/{department}', [OrganizationController::class, 'updateDepartment'])->name('departments.update');
+    Route::delete('/departemen/{department}', [OrganizationController::class, 'destroyDepartment'])->name('departments.destroy');
+    Route::post('/jabatan', [OrganizationController::class, 'storePosition'])->name('positions.store');
+    Route::put('/jabatan/{position}', [OrganizationController::class, 'updatePosition'])->name('positions.update');
+    Route::delete('/jabatan/{position}', [OrganizationController::class, 'destroyPosition'])->name('positions.destroy');
+
+    Route::get('/monitor', [MonitorController::class, 'index'])->name('monitor');
+    // Dibatasi supaya atasan tidak dibanjiri notifikasi karena tombol ditekan berulang.
+    Route::post('/monitor/ingatkan', [MonitorController::class, 'remindAll'])->middleware('throttle:5,1')->name('monitor.remind-all');
+    Route::post('/monitor/ingatkan/{employee}', [MonitorController::class, 'remind'])->middleware('throttle:20,1')->name('monitor.remind');
 
     Route::get('/kriteria', [HrdController::class, 'criteria'])->name('criteria');
     Route::put('/kriteria', [HrdController::class, 'updateWeights'])->name('criteria.update');
 
     Route::get('/proses-saw', [HrdController::class, 'saw'])->name('saw');
+    Route::get('/proses-saw/matriks', [HrdController::class, 'exportMatrix'])->name('saw.export');
     Route::post('/proses-saw', [HrdController::class, 'runSaw'])->middleware('throttle:10,1')->name('saw.run');
     Route::post('/penilaian/{assessment}/buka', [HrdController::class, 'reopenAssessment'])->name('assessments.reopen');
 
@@ -133,6 +154,7 @@ Route::middleware(['auth', 'idle', 'role:manager'])->prefix('atasan')->name('man
 Route::middleware(['auth', 'idle', 'role:direktur'])->prefix('direktur')->name('direktur.')->group(function () {
     Route::get('/dashboard', [DirekturDashboardController::class, 'index'])->name('dashboard');
     Route::get('/ranking', [DirekturController::class, 'ranking'])->name('ranking');
+    Route::get('/persetujuan', [DirekturController::class, 'approvals'])->name('approvals');
     Route::get('/ranking/unduh', [DirekturController::class, 'export'])->name('ranking.export');
     Route::get('/ranking/{employee}', [DirekturController::class, 'candidate'])->name('ranking.show');
     Route::post('/ranking/{employee}/keputusan', [DirekturController::class, 'decide'])->name('ranking.decide');
@@ -147,6 +169,11 @@ Route::middleware(['auth', 'idle', 'role:karyawan'])->prefix('karyawan')->name('
 | Akun (semua role)
 |--------------------------------------------------------------------------
 */
+Route::middleware(['auth', 'idle'])->prefix('notifikasi')->name('notifications.')->group(function () {
+    Route::get('/{id}', [NotificationController::class, 'open'])->whereUuid('id')->name('open');
+    Route::post('/baca-semua', [NotificationController::class, 'readAll'])->name('read-all');
+});
+
 Route::middleware(['auth', 'idle'])->prefix('akun')->name('account.')->group(function () {
     Route::get('/password', [AccountController::class, 'editPassword'])->name('password');
     Route::put('/password', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('password.update');

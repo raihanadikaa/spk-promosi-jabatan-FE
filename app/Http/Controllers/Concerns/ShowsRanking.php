@@ -77,7 +77,7 @@ trait ShowsRanking
         $criteria = PromotionData::criteria($period['id']);
         $filename = 'ranking-' . str($period['name'])->slug() . '.csv';
         $safe = fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v; // cegah formula injection di Excel
-        $labels = ['pending' => 'Menunggu keputusan', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
+        $labels = ['pending' => 'Menunggu keputusan', 'approved' => 'Disetujui', 'rejected' => 'Ditolak', 'revision' => 'Review ulang HRD'];
 
         return response()->streamDownload(function () use ($period, $criteria, $safe, $labels) {
             $out = fopen('php://output', 'w');
