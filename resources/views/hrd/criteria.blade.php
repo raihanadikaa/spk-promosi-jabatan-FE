@@ -9,6 +9,23 @@
 @endphp
 
 <x-app-layout title="Kriteria & bobot" subtitle="Bobot berlaku untuk {{ $period['name'] }}. Total harus tepat 100% sebelum ranking bisa dihitung.">
+    <x-slot:actions>
+        @if ($structureEditable)
+            <x-btn variant="secondary" icon="plus" x-on:click="$dispatch('criteria-form', { mode: 'create' })">Tambah kriteria</x-btn>
+        @endif
+        @if ($editable && $previousName)
+            <form method="POST" action="{{ route('hrd.criteria.copy') }}"
+                  x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('Ganti bobot sekarang dengan bobot ' . $previousName . '?') }})) $event.preventDefault()">
+                @csrf
+                <x-btn type="submit" variant="secondary" icon="refresh">Salin dari {{ $previousName }}</x-btn>
+            </form>
+        @endif
+    </x-slot:actions>
+
+    @unless ($structureEditable)
+        <p class="mb-4 text-sm text-ink-muted">Menambah atau menghapus kriteria hanya bisa saat tidak ada periode yang berlangsung. Nama dan cara menilai tetap bisa diubah.</p>
+    @endunless
+
     @unless ($editable)
         <div class="mb-6 flex gap-3 rounded-panel border border-line bg-surface px-4 py-3 text-ink-muted" role="note">
             <x-icon name="lock" class="mt-0.5" />
@@ -49,6 +66,7 @@
                                 <th scope="col">Cara menilai</th>
                                 <th scope="col">Jenis</th>
                                 <th scope="col" class="w-36 text-right">Bobot</th>
+                                <th scope="col"><span class="sr-only">Aksi</span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,6 +93,15 @@
                                         </div>
                                         @error("criteria.{$c['code']}.weight")<p class="field-error text-right">{{ $message }}</p>@enderror
                                     </td>
+                                    <td class="text-right">
+                                        <x-btn size="sm" variant="ghost" icon="pencil"
+                                               x-on:click="$dispatch('criteria-form', { mode: 'edit', item: {{ \Illuminate\Support\Js::from([
+                                                   'id' => $c['id'], 'criteria_name' => $c['name'], 'description' => $c['help'], 'input_type' => $c['input'],
+                                                   'unit' => $c['unit'], 'min_value' => $c['min'], 'max_value' => $c['max'],
+                                               ]) }} })">
+                                            Ubah<span class="sr-only"> {{ $c['name'] }}</span>
+                                        </x-btn>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -94,4 +121,93 @@
             @endif
         </x-panel>
     </form>
+
+    {{-- Dialog tambah / ubah kriteria (di luar form bobot) --}}
+    @php $reopenCriteria = $errors->any() && old('_form') === 'criterion'; @endphp
+    <div x-data="{
+            open: {{ $reopenCriteria ? 'true' : 'false' }},
+            structure: {{ $structureEditable ? 'true' : 'false' }},
+            f: {{ \Illuminate\Support\Js::from($reopenCriteria ? [
+                'id' => old('_editing'), 'criteria_name' => old('criteria_name'), 'description' => old('description'), 'input_type' => old('input_type', 'score'),
+                'unit' => old('unit'), 'min_value' => old('min_value'), 'max_value' => old('max_value'), 'attribute_type' => old('attribute_type', 'benefit'),
+            ] : ['input_type' => 'score', 'attribute_type' => 'benefit', 'min_value' => 0, 'max_value' => 100, 'unit' => 'poin']) }},
+            base: {{ \Illuminate\Support\Js::from(url('/hrd/kriteria')) }},
+            get full() { return this.structure && this.f.input_type !== 'auto' },
+            show(d) { this.f = d.item ? { ...d.item } : { input_type: 'score', attribute_type: 'benefit', min_value: 0, max_value: 100, unit: 'poin' }; this.open = true; this.$nextTick(() => this.$refs.name.focus()); },
+         }"
+         @criteria-form.window="show($event.detail)" @keydown.escape.window="open = false">
+        <div x-show="open" x-cloak x-transition.opacity class="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-ink/40 p-4" @click.self="open = false">
+            <form method="POST" :action="f.id ? base + '/' + f.id : base" novalidate
+                  class="w-full max-w-lg rounded-panel bg-surface shadow-[0_16px_48px_rgba(26,29,36,0.2)]"
+                  role="dialog" aria-modal="true" aria-labelledby="criteria-title">
+                @csrf
+                <input type="hidden" name="_method" :value="f.id ? 'PUT' : 'POST'">
+                <input type="hidden" name="_form" value="criterion">
+                <input type="hidden" name="_editing" :value="f.id ?? ''">
+                <header class="border-b border-line px-6 py-4">
+                    <h2 id="criteria-title" class="text-md font-bold" x-text="f.id ? 'Ubah kriteria' : 'Tambah kriteria'"></h2>
+                    <p class="mt-0.5 text-sm text-ink-muted" x-show="!f.id">Kriteria baru mulai dengan bobot 0%. Setelah itu atur ulang bobot sampai total 100%.</p>
+                </header>
+                <div class="space-y-5 px-6 py-5">
+                    <div>
+                        <label for="c-name" class="field-label">Nama kriteria</label>
+                        <input id="c-name" x-ref="name" name="criteria_name" x-model="f.criteria_name" required maxlength="60" class="field-input">
+                        @error('criteria_name')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="c-desc" class="field-label">Cara menilai</label>
+                        <textarea id="c-desc" name="description" x-model="f.description" rows="2" required maxlength="255" class="field-input"></textarea>
+                        @error('description')<p class="field-error">{{ $message }}</p>@enderror
+                    </div>
+                    <template x-if="full">
+                        <div class="space-y-5">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="c-input" class="field-label">Bentuk nilai</label>
+                                    <select id="c-input" name="input_type" x-model="f.input_type" class="field-input">
+                                        <option value="score">Skor (mis. 0–100)</option>
+                                        <option value="count">Jumlah (mis. kali, sertifikat)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="c-unit" class="field-label">Satuan</label>
+                                    <input id="c-unit" name="unit" x-model="f.unit" required maxlength="30" class="field-input">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="c-min" class="field-label">Nilai minimal</label>
+                                    <input id="c-min" type="number" name="min_value" x-model="f.min_value" min="0" required class="field-input num">
+                                </div>
+                                <div>
+                                    <label for="c-max" class="field-label">Nilai maksimal</label>
+                                    <input id="c-max" type="number" name="max_value" x-model="f.max_value" min="1" required class="field-input num">
+                                </div>
+                            </div>
+                            <div x-show="!f.id">
+                                <label for="c-type" class="field-label">Jenis</label>
+                                <select id="c-type" name="attribute_type" x-model="f.attribute_type" class="field-input">
+                                    <option value="benefit">Benefit (makin besar makin baik)</option>
+                                    <option value="cost">Cost (makin kecil makin baik)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+                    @foreach (['unit', 'min_value', 'max_value', 'input_type', 'attribute_type'] as $field)
+                        @error($field)<p class="field-error">{{ $message }}</p>@enderror
+                    @endforeach
+                </div>
+                <footer class="flex items-center gap-2 border-t border-line px-6 py-4">
+                    <button type="submit" form="criteria-delete" x-show="f.id && full" class="mr-auto text-sm font-semibold text-bad hover:underline">Hapus kriteria</button>
+                    <span class="ml-auto"></span>
+                    <x-btn variant="secondary" x-on:click="open = false">Batal</x-btn>
+                    <x-btn type="submit">Simpan</x-btn>
+                </footer>
+            </form>
+            <form id="criteria-delete" method="POST" :action="base + '/' + f.id" class="hidden"
+                  @submit="if (!confirm('Hapus kriteria ' + f.criteria_name + '?')) $event.preventDefault()">
+                @csrf @method('DELETE')
+            </form>
+        </div>
+    </div>
 </x-app-layout>

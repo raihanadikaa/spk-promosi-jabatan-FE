@@ -14,14 +14,47 @@ use Illuminate\Validation\ValidationException;
  */
 class PeriodService
 {
-    public function create(array $data): AssessmentPeriod
+    private function assertNoOverlap(array $data, ?int $ignoreId = null): void
     {
         $overlap = AssessmentPeriod::where('start_date', '<=', $data['end_date'])
             ->where('end_date', '>=', $data['start_date'])
+            ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists();
         if ($overlap) {
             throw ValidationException::withMessages(['start_date' => 'Rentang tanggal bertumpuk dengan periode lain.']);
         }
+    }
+
+    /** Hanya periode draft yang boleh diubah: setelah dimulai, tanggal sudah jadi acuan masa kerja & batas penilaian. */
+    public function update(AssessmentPeriod $period, array $data): AssessmentPeriod
+    {
+        if ($period->status !== AssessmentPeriod::DRAFT) {
+            throw ValidationException::withMessages(['period' => 'Hanya periode berstatus draft yang bisa diubah.']);
+        }
+        $this->assertNoOverlap($data, $period->id);
+        $period->update($data);
+
+        return $period;
+    }
+
+    /** Hapus periode draft yang belum punya penilaian (bobotnya ikut terhapus lewat cascade). */
+    public function delete(AssessmentPeriod $period): void
+    {
+        DB::transaction(function () use ($period) {
+            $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
+            if ($period->status !== AssessmentPeriod::DRAFT) {
+                throw ValidationException::withMessages(['period' => 'Periode yang sudah dimulai atau ditutup tidak bisa dihapus.']);
+            }
+            if ($period->assessments()->exists()) {
+                throw ValidationException::withMessages(['period' => 'Periode ini sudah punya penilaian, jadi tidak bisa dihapus.']);
+            }
+            $period->delete();
+        });
+    }
+
+    public function create(array $data): AssessmentPeriod
+    {
+        $this->assertNoOverlap($data);
 
         return DB::transaction(function () use ($data) {
             $source = AssessmentPeriod::orderByDesc('start_date')->first();
@@ -77,7 +110,7 @@ class PeriodService
             }
 
             $undecided = RankingResult::where('period_id', $period->id)
-                ->where('approval_status', RankingResult::PENDING)
+                ->whereIn('approval_status', [RankingResult::PENDING, RankingResult::REVISION])
                 ->count();
             if ($undecided > 0) {
                 throw ValidationException::withMessages(['period' => "Masih ada {$undecided} rekomendasi yang belum diputuskan direktur."]);

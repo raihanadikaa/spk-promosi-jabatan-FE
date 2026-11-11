@@ -48,7 +48,7 @@
     }
 
     .data-table th {
-        @apply whitespace-nowrap border-b border-line px-4 py-2.5 text-sm font-medium text-ink-muted;
+        @apply whitespace-nowrap border-b border-line bg-canvas px-4 py-3 text-xs font-bold uppercase tracking-wide text-ink-muted;
     }
 
     .data-table td {

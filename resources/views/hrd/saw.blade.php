@@ -6,12 +6,17 @@
 @endphp
 
 <x-app-layout title="Proses SAW" subtitle="Jejak perhitungan {{ $period['name'] }}: dari nilai mentah sampai skor akhir.{{ $period['calculated_at'] ? ' Terakhir dihitung ' . Format::dateTime($period['calculated_at']) . '.' : '' }}">
-    @if ($open)
+    @if ($open || $ranked > 0)
         <x-slot:actions>
-            <form method="POST" action="{{ route('hrd.saw.run') }}">
-                @csrf
-                <x-btn type="submit" icon="refresh">Hitung ulang ranking</x-btn>
-            </form>
+            @if ($ranked > 0)
+                <x-btn variant="secondary" icon="download" :href="route('hrd.saw.export')" title="Matriks X, R, bobot W, dan skor V dalam satu CSV">Ekspor matriks</x-btn>
+            @endif
+            @if ($open)
+                <form method="POST" action="{{ route('hrd.saw.run') }}">
+                    @csrf
+                    <x-btn type="submit" icon="refresh">Hitung ulang ranking</x-btn>
+                </form>
+            @endif
         </x-slot:actions>
     @endif
 

@@ -15,6 +15,7 @@ use App\Models\Employee;
 use App\Models\User;
 use App\Queries\PromotionData;
 use App\Services\AssessmentService;
+use App\Services\EmployeeImportService;
 use App\Services\PeriodService;
 use App\Services\RankingService;
 use Illuminate\Http\RedirectResponse;
@@ -72,6 +73,31 @@ class HrdController extends Controller
         return to_route('hrd.employees')->with('success', "Data {$employee->name} diperbarui.");
     }
 
+    /** Impor banyak karyawan sekaligus dari CSV. Semua baris harus valid, kalau tidak dibatalkan seluruhnya. */
+    public function importEmployees(Request $request, EmployeeImportService $import): RedirectResponse
+    {
+        $request->validate(
+            ['file' => ['required', 'file', 'max:1024', 'mimes:csv,txt']],
+            ['file.mimes' => 'Berkas harus CSV.', 'file.max' => 'Ukuran berkas maksimal 1 MB.'],
+            ['file' => 'berkas'],
+        );
+
+        $count = $import->import($request->file('file')->getRealPath());
+
+        return to_route('hrd.employees')->with('success', "{$count} karyawan ditambahkan dari berkas.");
+    }
+
+    public function employeeTemplate(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, EmployeeImportService::HEADER, ';');
+            fputcsv($out, ['Contoh Nama', '3201990101', array_values(PromotionData::departments())[0] ?? 'Operasional', array_values(PromotionData::positions())[0] ?? 'Staf', '2022-01-17', ''], ';');
+            fclose($out);
+        }, 'templat-karyawan.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     /* ---------------- Periode ---------------- */
 
     public function periods(): View
@@ -111,6 +137,20 @@ class HrdController extends Controller
         return to_route('hrd.periods')->with('success', "Periode {$period->period_name} ditutup. Nilai dan bobot sekarang terkunci.");
     }
 
+    public function updatePeriod(StorePeriodRequest $request, AssessmentPeriod $period, PeriodService $periods): RedirectResponse
+    {
+        $periods->update($period, $request->validated());
+
+        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} diperbarui.");
+    }
+
+    public function destroyPeriod(AssessmentPeriod $period, PeriodService $periods): RedirectResponse
+    {
+        $periods->delete($period);
+
+        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} dihapus.");
+    }
+
     /* ---------------- Kriteria & bobot ---------------- */
 
     public function criteria(): View
@@ -125,6 +165,8 @@ class HrdController extends Controller
             'criteria' => PromotionData::criteria($period['id']),
             'period' => $period,
             'editable' => $period['status'] !== AssessmentPeriod::CLOSED,
+            'previousName' => $model->previous()?->period_name,
+            'structureEditable' => ! AssessmentPeriod::ongoing()->exists(),
         ]);
     }
 
@@ -151,6 +193,31 @@ class HrdController extends Controller
         });
 
         return to_route('hrd.criteria')->with('success', 'Bobot kriteria disimpan. Hitung ulang ranking agar hasilnya ikut berubah.');
+    }
+
+    /** Salin bobot dari periode sebelumnya ke periode yang sedang diatur. */
+    public function copyWeights(): RedirectResponse
+    {
+        $period = PromotionData::weightsPeriodModel();
+        if (! $period || $period->status === AssessmentPeriod::CLOSED) {
+            throw ValidationException::withMessages(['criteria' => 'Bobot periode yang sudah ditutup tidak bisa diubah.']);
+        }
+        $previous = $period->previous();
+        $weights = $previous?->weights()->pluck('weight_value', 'criteria_id') ?? collect();
+        if ($weights->isEmpty()) {
+            throw ValidationException::withMessages(['criteria' => 'Belum ada periode sebelumnya yang bobotnya bisa disalin.']);
+        }
+
+        DB::transaction(function () use ($period, $weights) {
+            foreach (Criterion::pluck('id') as $criteriaId) {
+                CriteriaWeight::updateOrCreate(
+                    ['period_id' => $period->id, 'criteria_id' => $criteriaId],
+                    ['weight_value' => (int) ($weights[$criteriaId] ?? 0)],
+                );
+            }
+        });
+
+        return to_route('hrd.criteria')->with('success', "Bobot disalin dari {$previous->period_name}. Hitung ulang ranking agar hasilnya ikut berubah.");
     }
 
     /* ---------------- Proses SAW ---------------- */
@@ -210,5 +277,46 @@ class HrdController extends Controller
     public function export(): StreamedResponse
     {
         return $this->exportCsv();
+    }
+
+    /**
+     * Jejak perhitungan SAW lengkap untuk dicek ulang di Excel:
+     * baris bobot W, lalu tiap alternatif: matriks X (mentah), R (ternormalisasi), dan V (Σ w·r).
+     */
+    public function exportMatrix(): StreamedResponse
+    {
+        $period = PromotionData::currentPeriod() ?? abort(404);
+        $criteria = PromotionData::criteria($period['id']);
+        $num = fn ($v, $d = 4) => number_format((float) $v, $d, ',', '');
+        $safe = fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v;
+
+        return response()->streamDownload(function () use ($period, $criteria, $num, $safe) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            $codes = array_column($criteria, 'code');
+
+            fputcsv($out, ['Periode', $safe($period['name'])], ';');
+            fputcsv($out, array_merge(['Bobot W', '', ''], array_map(fn ($c) => $num($c['weight'] / 100, 2), $criteria), [''], array_map(fn ($c) => $c['type'], $criteria)), ';');
+            fputcsv($out, array_merge(
+                ['Alternatif', 'Nama', 'NIK'],
+                array_map(fn ($c) => "X {$c}", $codes),
+                [''],
+                array_map(fn ($c) => "R {$c}", $codes),
+                ['V (skor)', 'Peringkat'],
+            ), ';');
+
+            PromotionData::rankingQuery($period)->chunk(200, function ($results) use ($out, $period, $codes, $num, $safe) {
+                foreach (PromotionData::rankingRows($results, $period) as $row) {
+                    fputcsv($out, array_map($safe, array_merge(
+                        ['A' . $row['rank'], $row['name'], $row['nik']],
+                        array_map(fn ($c) => $num($row['raw'][$c] ?? 0, 2), $codes),
+                        [''],
+                        array_map(fn ($c) => $num($row['normalized'][$c] ?? 0), $codes),
+                        [$num($row['score']), $row['rank']],
+                    )), ';');
+                }
+            });
+            fclose($out);
+        }, 'matriks-saw-' . str($period['name'])->slug() . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

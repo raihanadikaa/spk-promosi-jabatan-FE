@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Employee;
 use App\Models\User;
 use App\Queries\PromotionData;
 use DOMDocument;
@@ -32,6 +33,30 @@ class CrawlEverythingTest extends TestCase
         }
     }
 
+    public function test_dashboard_hrd_menampilkan_persentase_penilaian_terkirim(): void
+    {
+        $hrd = User::where('email', 'hrd@talentrank.test')->firstOrFail();
+
+        $this->actingAs($hrd)
+            ->get('/hrd/dashboard')
+            ->assertOk()
+            ->assertSee('75%', false)
+            ->assertSee('width: 75%', false);
+    }
+
+    public function test_dashboard_hrd_menampilkan_nol_persen_jika_tidak_ada_karyawan_aktif(): void
+    {
+        Employee::query()->update(['is_active' => false]);
+        PromotionData::flush();
+        $hrd = User::where('email', 'hrd@talentrank.test')->firstOrFail();
+
+        $this->actingAs($hrd)
+            ->get('/hrd/dashboard')
+            ->assertOk()
+            ->assertSee('0%', false)
+            ->assertSee('width: 0%', false);
+    }
+
     private function crawlAs(User $user): void
     {
         $queue = [$user->dashboardUrl()];
@@ -40,7 +65,7 @@ class CrawlEverythingTest extends TestCase
 
         while ($queue && count($seen) < 60) {
             $url = array_shift($queue);
-            $path = parse_url($url, PHP_URL_PATH) . (($q = parse_url($url, PHP_URL_QUERY)) ? "?$q" : '');
+            $path = parse_url($url, PHP_URL_PATH).(($q = parse_url($url, PHP_URL_QUERY)) ? "?$q" : '');
             if (isset($seen[$path])) {
                 continue;
             }
@@ -61,7 +86,7 @@ class CrawlEverythingTest extends TestCase
                 }
             }
             foreach ($pageForms as $form) {
-                $forms[$form['method'] . ' ' . $form['action'] . json_encode($form['data'])] = $form + ['from' => $path];
+                $forms[$form['method'].' '.$form['action'].json_encode($form['data'])] = $form + ['from' => $path];
             }
         }
 
@@ -88,7 +113,7 @@ class CrawlEverythingTest extends TestCase
             if (! $path || ($host && $host !== parse_url(config('app.url'), PHP_URL_HOST) && $host !== 'localhost') || str_starts_with($href, '#')) {
                 continue;
             }
-            $links[] = $path . (($q = parse_url($href, PHP_URL_QUERY)) ? "?$q" : '');
+            $links[] = $path.(($q = parse_url($href, PHP_URL_QUERY)) ? "?$q" : '');
         }
 
         $forms = [];

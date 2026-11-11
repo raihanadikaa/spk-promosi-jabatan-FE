@@ -35,7 +35,8 @@
 
         @if ($result['recommended'])
             <x-panel class="mt-6" title="Rekomendasi promosi">
-                <x-status :value="$result['approval_status'] === 'pending' ? 'waiting' : $result['approval_status']" />
+                {{-- 'revision' (sedang ditinjau ulang HRD) bagi karyawan tetap tampil sebagai menunggu keputusan --}}
+                <x-status :value="in_array($result['approval_status'], ['pending', 'revision'], true) ? 'waiting' : $result['approval_status']" />
                 <p class="mt-2 text-ink-muted">
                     @switch($result['approval_status'])
                         @case('approved') {{ $result['approval_note'] ?: 'Promosi Anda disetujui direktur.' }} @break
@@ -69,5 +70,23 @@
         <p class="mt-4 text-sm text-ink-muted">
             Ada yang tidak sesuai? Sampaikan ke {{ $employee->supervisor?->name ?? 'atasan Anda' }} atau HRD sebelum periode ditutup.
         </p>
+    @endif
+
+    @if (! empty($history))
+        <x-panel class="mt-6" title="Riwayat penilaian" description="Hasil periode sebelumnya yang sudah ditutup." flush>
+            <ul class="divide-y divide-line">
+                @foreach ($history as $h)
+                    <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                        <span class="font-semibold">{{ $h['period'] }}</span>
+                        <span class="num text-ink-muted">Skor <strong class="text-ink">{{ Format::score($h['score']) }}</strong> · peringkat {{ $h['rank'] }} dari {{ $h['total'] }}</span>
+                        @if ($h['approval_status'])
+                            <x-status :value="$h['approval_status'] === 'pending' ? 'waiting' : $h['approval_status']" />
+                        @else
+                            <x-badge tone="neutral">Tidak direkomendasikan</x-badge>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </x-panel>
     @endif
 </x-app-layout>

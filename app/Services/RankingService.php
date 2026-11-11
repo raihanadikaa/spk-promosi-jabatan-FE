@@ -113,7 +113,11 @@ class RankingService
                     'is_recommended' => $recommended,
                 ]);
                 if (! $row->isDecided()) {
+                    // Termasuk 'revision': setelah HRD meninjau & menghitung ulang, kandidat kembali menunggu keputusan.
                     $row->approval_status = $recommended ? RankingResult::PENDING : null;
+                    if ($row->isDirty('approval_status')) {
+                        $row->forceFill(['approved_by' => null, 'approved_at' => null]);
+                    }
                 }
                 $row->save();
             }
@@ -121,7 +125,7 @@ class RankingService
             // Yang tidak lagi ikut perhitungan dihapus dari ranking, kecuali sudah diputuskan direktur.
             RankingResult::where('period_id', $period->id)
                 ->whereNotIn('employee_id', array_keys($results))
-                ->where(fn ($q) => $q->whereNull('approval_status')->orWhere('approval_status', RankingResult::PENDING))
+                ->where(fn ($q) => $q->whereNull('approval_status')->orWhereIn('approval_status', [RankingResult::PENDING, RankingResult::REVISION]))
                 ->delete();
 
             $period->forceFill(['calculated_at' => $now])->save();

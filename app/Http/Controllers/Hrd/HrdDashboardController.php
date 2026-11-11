@@ -33,10 +33,15 @@ class HrdDashboardController extends Controller
             ->map(fn ($e) => PromotionData::employeeArray($e, $period))
             ->sortBy(fn ($e) => $e['status'] === 'draft' ? 0 : 1)
             ->values();
+        $counts = PromotionData::statusCounts($period);
+        $submittedPercent = $counts['total'] > 0
+            ? (int) round($counts['submitted'] / $counts['total'] * 100)
+            : 0;
 
         return view('hrd.dashboard', [
             'period' => $period,
-            'counts' => PromotionData::statusCounts($period),
+            'counts' => $counts,
+            'submittedPercent' => $submittedPercent,
             'approvals' => PromotionData::approvalCounts($period),
             'departments' => PromotionData::departmentProgress($period),
             'followUps' => $followUps,

@@ -14,7 +14,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
+                sans: ['Manrope', '"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
             },
             fontSize: {
                 xs: ['12px', '16px'],
@@ -26,24 +26,24 @@ export default {
                 '2xl': ['34px', '40px'],
             },
             colors: {
-                brand: { DEFAULT: '#7A1F2B', hover: '#66192A', soft: '#F6ECEE', ring: '#B8616C' },
-                ink: { DEFAULT: '#1A1D24', muted: '#5A6170', faint: '#8A909C' },
-                line: { DEFAULT: '#E2E5EA', strong: '#CDD2D9' },
-                canvas: '#F3F4F6',
+                brand: { DEFAULT: '#2563EB', hover: '#1D4ED8', soft: '#EFF6FF', ring: '#60A5FA' },
+                ink: { DEFAULT: '#1E293B', muted: '#64748B', faint: '#94A3B8' },
+                line: { DEFAULT: '#E2E8F0', strong: '#CBD5E1' },
+                canvas: '#F8FAFC',
                 surface: '#FFFFFF',
                 c1: '#3F6E9A',
                 c2: '#21877A',
                 c3: '#C08A1E',
                 c4: '#86549B',
                 c5: '#5F8F4E',
-                ok: { DEFAULT: '#1D6B45', bg: '#E6F3EC' },
-                warn: { DEFAULT: '#8A5A00', bg: '#FBF1DC' },
-                bad: { DEFAULT: '#A42A22', bg: '#FBE9E7' },
-                info: { DEFAULT: '#3B4250', bg: '#EEF0F3' },
+                ok: { DEFAULT: '#0F766E', bg: '#CCFBF1' },
+                warn: { DEFAULT: '#B45309', bg: '#FEF3C7' },
+                bad: { DEFAULT: '#B91C1C', bg: '#FEE2E2' },
+                info: { DEFAULT: '#475569', bg: '#F1F5F9' },
             },
             borderRadius: {
-                ctl: '6px',
-                panel: '10px',
+                ctl: '0.5rem',
+                panel: '0.75rem',
             },
             letterSpacing: {
                 title: '-0.02em',

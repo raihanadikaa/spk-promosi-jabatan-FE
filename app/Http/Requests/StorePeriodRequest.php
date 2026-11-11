@@ -14,7 +14,8 @@ class StorePeriodRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'period_name' => ['required', 'string', 'max:60', 'unique:assessment_periods,period_name'],
+            // Saat mengubah periode (route {period}), nama miliknya sendiri tidak dianggap duplikat.
+            'period_name' => ['required', 'string', 'max:60', \Illuminate\Validation\Rule::unique('assessment_periods', 'period_name')->ignore($this->route('period'))],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'assessment_deadline' => ['required', 'date', 'after_or_equal:start_date', 'before_or_equal:end_date'],

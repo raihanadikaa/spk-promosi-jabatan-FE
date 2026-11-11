@@ -7,6 +7,7 @@
         'pending' => ['neutral', 'Belum dinilai'],
         'approved' => ['success', 'Disetujui'],
         'rejected' => ['danger', 'Ditolak'],
+        'revision' => ['warning', 'Review ulang HRD'],
         'waiting' => ['warning', 'Menunggu keputusan'],
         'ongoing' => ['brand', 'Berlangsung'],
         'closed' => ['neutral', 'Ditutup'],
