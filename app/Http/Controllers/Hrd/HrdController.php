@@ -166,6 +166,7 @@ class HrdController extends Controller
             'period' => $period,
             'editable' => $period['status'] !== AssessmentPeriod::CLOSED,
             'previousName' => $model->previous()?->period_name,
+            'structureEditable' => ! AssessmentPeriod::ongoing()->exists(),
         ]);
     }
 

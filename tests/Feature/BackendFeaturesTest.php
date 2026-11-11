@@ -241,6 +241,46 @@ class BackendFeaturesTest extends TestCase
         $this->actingAs($hrd)->post('/hrd/karyawan/impor', ['file' => $csv("Dobel;3299000001;{$dept};{$pos};2023-02-01;\n")])->assertSessionHasErrors('file');
     }
 
+    /* ---------------- Kelola kriteria ---------------- */
+
+    public function test_kriteria_hanya_bisa_ditambah_dan_dihapus_saat_tidak_ada_periode_berlangsung(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $new = ['criteria_name' => 'Kepemimpinan', 'description' => 'Penilaian atasan atas kemampuan memimpin.', 'attribute_type' => 'benefit',
+                'input_type' => 'score', 'unit' => 'poin', 'min_value' => 0, 'max_value' => 100];
+        $c2 = \App\Models\Criterion::where('code', 'C2')->firstOrFail();
+
+        // Saat periode berlangsung: tambah/hapus ditolak, ubah nama boleh tapi rentang nilai tidak berubah.
+        $this->actingAs($hrd)->post('/hrd/kriteria', $new)->assertSessionHasErrors('criteria');
+        $this->actingAs($hrd)->delete("/hrd/kriteria/{$c2->id}")->assertSessionHasErrors('criteria');
+        $this->actingAs($hrd)->put("/hrd/kriteria/{$c2->id}", ['criteria_name' => 'Kinerja (KPI)', 'description' => $c2->description, 'min_value' => 5, 'max_value' => 50])->assertSessionHasNoErrors();
+        $this->assertSame('Kinerja (KPI)', $c2->fresh()->criteria_name);
+        $this->assertSame($c2->max_value, $c2->fresh()->max_value);
+
+        // Setelah periode ditutup dan ada draft baru.
+        AssessmentPeriod::query()->update(['status' => AssessmentPeriod::CLOSED]);
+        $this->actingAs($this->as('hrd@talentrank.test'))->post('/hrd/periode', ['period_name' => 'Semester 1 2027', 'start_date' => '2027-01-01', 'end_date' => '2027-06-30', 'assessment_deadline' => '2027-05-15'])->assertSessionHasNoErrors();
+        $draft = AssessmentPeriod::where('status', 'draft')->firstOrFail();
+
+        $this->actingAs($this->as('hrd@talentrank.test'))->post('/hrd/kriteria', ['max_value' => 0] + $new)->assertSessionHasErrors('max_value');
+        $this->actingAs($this->as('hrd@talentrank.test'))->post('/hrd/kriteria', $new)->assertSessionHasNoErrors();
+        $c6 = \App\Models\Criterion::where('code', 'C6')->firstOrFail();
+        $this->assertSame(0, (int) $draft->weights()->where('criteria_id', $c6->id)->value('weight_value'), 'Kriteria baru berbobot 0 di periode draft');
+        $this->assertSame(100, (int) $draft->weights()->sum('weight_value'));
+
+        // Halaman yang menampilkan kriteria tetap aman dengan kriteria ke-6.
+        foreach (['/hrd/kriteria', '/hrd/proses-saw', '/hrd/ranking', '/hrd/dashboard'] as $url) {
+            $this->actingAs($this->as('hrd@talentrank.test'))->get($url)->assertOk();
+        }
+
+        // Kriteria lama yang sudah dipakai penilaian dan kriteria otomatis tidak bisa dihapus; yang baru bisa.
+        $this->actingAs($this->as('hrd@talentrank.test'))->delete("/hrd/kriteria/{$c2->id}")->assertSessionHasErrors('criteria');
+        $c1 = \App\Models\Criterion::where('code', 'C1')->firstOrFail();
+        $this->actingAs($this->as('hrd@talentrank.test'))->delete("/hrd/kriteria/{$c1->id}")->assertSessionHasErrors('criteria');
+        $this->actingAs($this->as('hrd@talentrank.test'))->delete("/hrd/kriteria/{$c6->id}")->assertSessionHasNoErrors();
+        $this->assertModelMissing($c6);
+    }
+
     /* ---------------- Riwayat karyawan ---------------- */
 
     public function test_karyawan_melihat_riwayat_periode_yang_sudah_ditutup(): void

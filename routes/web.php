@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Direktur\DirekturController;
 use App\Http\Controllers\Direktur\DirekturDashboardController;
+use App\Http\Controllers\Hrd\CriteriaController;
 use App\Http\Controllers\Hrd\HrdController;
 use App\Http\Controllers\Hrd\HrdDashboardController;
 use App\Http\Controllers\Hrd\MonitorController;
@@ -92,6 +93,7 @@ Route::pattern('period', '[0-9]+');
 Route::pattern('assessment', '[0-9]+');
 Route::pattern('user', '[0-9]+');
 Route::pattern('department', '[0-9]+');
+Route::pattern('criterion', '[0-9]+');
 Route::pattern('position', '[0-9]+');
 
 Route::middleware(['auth', 'idle', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -135,6 +137,9 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
     Route::get('/kriteria', [HrdController::class, 'criteria'])->name('criteria');
     Route::put('/kriteria', [HrdController::class, 'updateWeights'])->name('criteria.update');
     Route::post('/kriteria/salin', [HrdController::class, 'copyWeights'])->name('criteria.copy');
+    Route::post('/kriteria', [CriteriaController::class, 'store'])->name('criteria.store');
+    Route::put('/kriteria/{criterion}', [CriteriaController::class, 'update'])->name('criteria.edit');
+    Route::delete('/kriteria/{criterion}', [CriteriaController::class, 'destroy'])->name('criteria.destroy');
 
     Route::get('/proses-saw', [HrdController::class, 'saw'])->name('saw');
     Route::get('/proses-saw/matriks', [HrdController::class, 'exportMatrix'])->name('saw.export');
