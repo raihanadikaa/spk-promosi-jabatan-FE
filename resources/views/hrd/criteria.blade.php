@@ -9,6 +9,16 @@
 @endphp
 
 <x-app-layout title="Kriteria & bobot" subtitle="Bobot berlaku untuk {{ $period['name'] }}. Total harus tepat 100% sebelum ranking bisa dihitung.">
+    @if ($editable && $previousName)
+        <x-slot:actions>
+            <form method="POST" action="{{ route('hrd.criteria.copy') }}"
+                  x-data @submit="if (!confirm({{ \Illuminate\Support\Js::from('Ganti bobot sekarang dengan bobot ' . $previousName . '?') }})) $event.preventDefault()">
+                @csrf
+                <x-btn type="submit" variant="secondary" icon="refresh">Salin dari {{ $previousName }}</x-btn>
+            </form>
+        </x-slot:actions>
+    @endif
+
     @unless ($editable)
         <div class="mb-6 flex gap-3 rounded-panel border border-line bg-surface px-4 py-3 text-ink-muted" role="note">
             <x-icon name="lock" class="mt-0.5" />

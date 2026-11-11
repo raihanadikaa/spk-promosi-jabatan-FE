@@ -8,8 +8,36 @@
 
 <x-app-layout title="Karyawan" subtitle="Karyawan aktif yang ikut dinilai, atasan penilainya, dan status penilaian periode berjalan.">
     <x-slot:actions>
+        <x-btn variant="secondary" icon="download" x-on:click="$dispatch('employee-import')">Impor CSV</x-btn>
         <x-btn icon="plus" x-on:click="$dispatch('employee-form', { mode: 'create' })">Tambah karyawan</x-btn>
     </x-slot:actions>
+
+    {{-- Dialog impor CSV --}}
+    <div x-data="{ open: {{ $errors->has('file') ? 'true' : 'false' }} }" @employee-import.window="open = true" @keydown.escape.window="open = false">
+        <div x-show="open" x-cloak x-transition.opacity class="fixed inset-0 z-40 grid place-items-center bg-ink/40 p-4" @click.self="open = false">
+            <form method="POST" action="{{ route('hrd.employees.import') }}" enctype="multipart/form-data"
+                  class="w-full max-w-lg rounded-panel bg-surface shadow-[0_16px_48px_rgba(26,29,36,0.2)]"
+                  role="dialog" aria-modal="true" aria-labelledby="import-title">
+                @csrf
+                <header class="border-b border-line px-6 py-4">
+                    <h2 id="import-title" class="text-md font-bold">Impor karyawan dari CSV</h2>
+                    <p class="mt-0.5 text-sm text-ink-muted">Kolom: nama; nik; departemen; jabatan; tanggal_bergabung; email_atasan (opsional).</p>
+                </header>
+                <div class="space-y-4 px-6 py-5">
+                    <div>
+                        <label for="import-file" class="field-label">Berkas CSV</label>
+                        <input id="import-file" type="file" name="file" accept=".csv,text/csv" required class="field-input h-auto py-2">
+                        @error('file')<p class="field-error">{{ $message }}</p>@else<p class="field-help">Maks. 500 baris. Jika ada satu baris salah, tidak ada data yang disimpan.</p>@enderror
+                    </div>
+                    <a href="{{ route('hrd.employees.template') }}" class="link inline-flex items-center gap-1.5 text-sm"><x-icon name="download" class="size-4" /> Unduh templat CSV</a>
+                </div>
+                <footer class="flex justify-end gap-2 border-t border-line px-6 py-4">
+                    <x-btn variant="secondary" x-on:click="open = false">Batal</x-btn>
+                    <x-btn type="submit">Impor</x-btn>
+                </footer>
+            </form>
+        </div>
+    </div>
 
     <x-filter-bar placeholder="Cari nama atau NIK" :search="$filters['q']" :total="$employees->total()"
                   :filters="[
