@@ -72,7 +72,7 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 | `app/Http/Requests` | Validasi input + pesan bahasa Indonesia |
 | `app/Queries/PromotionData.php` | Query baca untuk halaman (paginasi & filter di database, tanpa N+1) |
 | `app/Http/Controllers` | Tipis: validasi → service → redirect/view |
-| `resources/views` | Tampilan; pedoman visual di `DESIGN.md` |
+| `resources/views` | Tampilan (Blade) |
 
 Pelanggaran aturan bisnis selalu dikembalikan sebagai pesan validasi (toast + pesan di field), tidak pernah error 500.
 
