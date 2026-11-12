@@ -99,7 +99,11 @@ class RankingService
                     ];
                 }
             }
-            NormalizedScore::upsert($normalizedRows, ['assessment_detail_id'], ['normalized_value', 'weighted_value', 'updated_at']);
+            // Dicicil per 500 baris: satu query raksasa melewati batas placeholder database
+            // (SQLite ±32 ribu, MySQL 65.535) begitu karyawannya ribuan.
+            foreach (array_chunk($normalizedRows, 500) as $chunk) {
+                NormalizedScore::upsert($chunk, ['assessment_detail_id'], ['normalized_value', 'weighted_value', 'updated_at']);
+            }
 
             // 4. Simpan ranking. Keputusan direktur yang sudah final tidak diubah.
             $existing = RankingResult::where('period_id', $period->id)->get()->keyBy('employee_id');

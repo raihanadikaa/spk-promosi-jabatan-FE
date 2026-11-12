@@ -102,10 +102,10 @@
     </main>
 
     {{-- Panel metode SAW mengikuti komposisi login pada prototipe Figma. --}}
-    <aside class="relative hidden overflow-hidden bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#174867] text-white lg:order-1 lg:flex lg:flex-col lg:justify-center lg:px-16 xl:px-24" aria-label="Cara skor dihitung">
+    <aside class="relative hidden overflow-hidden bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#174867] text-white lg:order-1 lg:flex lg:flex-col lg:px-16 lg:py-8 xl:px-24" aria-label="Cara skor dihitung">
         <div class="pointer-events-none absolute -right-32 -top-32 size-[28rem] rounded-full border border-white/10 shadow-[0_0_0_5rem_rgba(255,255,255,0.025),0_0_0_10rem_rgba(255,255,255,0.018)]" aria-hidden="true"></div>
         <div class="pointer-events-none absolute -bottom-36 -left-28 size-[22rem] rounded-full bg-teal-700/20 blur-sm" aria-hidden="true"></div>
-        <div class="relative z-10 max-w-lg">
+        <div class="relative z-10 my-auto max-w-lg py-4">
             <p class="text-sm font-semibold text-white/75">Sistem pendukung keputusan</p>
             <h2 class="mt-3 text-2xl font-bold leading-tight tracking-title">
                 Keputusan promosi yang lebih objektif dan transparan.
@@ -130,15 +130,13 @@
                 <p class="mt-6 text-white/75">
                     Atasan mengisi nilai, sistem menormalisasi dan menjumlahkan sesuai bobot,
                     lalu direktur memutuskan dari rincian yang sama.
-
-                
                 </p>
                 <div class="mt-6 border-t border-white/20 pt-4">
                     <p class="mt-1 text-sm text-white/75">Setiap skor dapat ditelusuri hingga nilai mentah dan bobotnya.</p>
                 </div>
             </div>
         </div>
-        <p class="absolute bottom-8 left-16 text-xs text-white/60 xl:left-24">TalentRank · SPK Promosi Jabatan</p>
+        <p class="relative z-10 shrink-0 pt-4 text-xs text-white/60">TalentRank · SPK Promosi Jabatan</p>
     </aside>
 </div>
 </body>
