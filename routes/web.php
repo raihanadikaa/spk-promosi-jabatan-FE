@@ -148,6 +148,7 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
 
     Route::get('/ranking', [HrdController::class, 'ranking'])->name('ranking');
     Route::get('/ranking/unduh', [HrdController::class, 'export'])->name('ranking.export');
+    Route::get('/ranking/laporan', [HrdController::class, 'report'])->name('ranking.report');
     Route::get('/ranking/{employee}', [HrdController::class, 'candidate'])->name('ranking.show');
 });
 
@@ -164,6 +165,7 @@ Route::middleware(['auth', 'idle', 'role:direktur'])->prefix('direktur')->name('
     Route::get('/ranking', [DirekturController::class, 'ranking'])->name('ranking');
     Route::get('/persetujuan', [DirekturController::class, 'approvals'])->name('approvals');
     Route::get('/ranking/unduh', [DirekturController::class, 'export'])->name('ranking.export');
+    Route::get('/ranking/laporan', [DirekturController::class, 'report'])->name('ranking.report');
     Route::get('/ranking/{employee}', [DirekturController::class, 'candidate'])->name('ranking.show');
     Route::post('/ranking/{employee}/keputusan', [DirekturController::class, 'decide'])->name('ranking.decide');
 });

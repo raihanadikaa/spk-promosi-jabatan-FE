@@ -70,6 +70,19 @@ trait ShowsRanking
         ]);
     }
 
+    /** Laporan ranking lengkap siap cetak (disimpan sebagai PDF lewat dialog cetak browser). */
+    protected function reportView(string $backRoute): View
+    {
+        $period = PromotionData::currentPeriod() ?? abort(404);
+
+        return view('shared.report', [
+            'period' => $period,
+            'criteria' => PromotionData::criteria($period['id']),
+            'rows' => PromotionData::ranking($period),
+            'back' => route($backRoute),
+        ]);
+    }
+
     /** CSV seluruh ranking; dibaca per 200 baris supaya memori tetap kecil walau datanya banyak. */
     protected function exportCsv(): StreamedResponse
     {

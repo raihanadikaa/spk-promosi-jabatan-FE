@@ -1,7 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
-/** Token warna & tipografi — lihat DESIGN.md */
+/** Token warna & tipografi TalentRank */
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
