@@ -31,7 +31,8 @@ class SecurityHeaders
             "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval'{$dev}",
             "style-src 'self' 'unsafe-inline'{$dev}",
             "font-src 'self' data:{$dev}",
-            "img-src 'self' data:",
+            // blob: = pratinjau foto profil yang dipilih (URL.createObjectURL), tidak pernah dari luar.
+            "img-src 'self' data: blob:",
             "connect-src 'self'{$devWs}{$dev}",
             "form-action 'self'",
             "frame-ancestors 'none'",

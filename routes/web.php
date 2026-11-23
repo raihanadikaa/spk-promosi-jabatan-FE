@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\SensitivityController;
 use App\Http\Controllers\Direktur\DirekturController;
@@ -197,4 +198,16 @@ Route::middleware(['auth', 'idle'])->prefix('notifikasi')->name('notifications.'
 Route::middleware(['auth', 'idle'])->prefix('akun')->name('account.')->group(function () {
     Route::get('/password', [AccountController::class, 'editPassword'])->name('password');
     Route::put('/password', [AccountController::class, 'updatePassword'])->middleware('throttle:6,1')->name('password.update');
+
+    // Profil & pengaturan (semua role)
+    Route::get('/', [SettingsController::class, 'show'])->name('settings');
+    Route::put('/profil', [SettingsController::class, 'updateProfile'])->name('profile.update');
+    Route::post('/foto', [SettingsController::class, 'uploadPhoto'])->middleware('throttle:10,1')->name('photo.upload');
+    Route::delete('/foto', [SettingsController::class, 'deletePhoto'])->name('photo.delete');
+    Route::put('/avatar', [SettingsController::class, 'setPreset'])->name('avatar.preset');
+    Route::delete('/sesi/{id}', [SettingsController::class, 'destroySession'])->where('id', '[A-Za-z0-9]{20,64}')->name('sessions.destroy');
+    Route::post('/sesi/keluar-lainnya', [SettingsController::class, 'destroyOtherSessions'])->middleware('throttle:6,1')->name('sessions.others');
+    Route::delete('/', [SettingsController::class, 'destroyAccount'])->middleware('throttle:6,1')->name('destroy');
 });
+
+Route::get('/avatar/{user}/{v}', [SettingsController::class, 'avatar'])->middleware('auth')->where('v', '[A-Za-z0-9-]+')->name('avatar.show');

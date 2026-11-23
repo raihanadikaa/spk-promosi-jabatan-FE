@@ -73,6 +73,15 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 
 Setelah `git pull` yang membawa migrasi baru, jalankan `php artisan migrate`.
 
+## Profil & pengaturan akun (`/akun`, semua role)
+
+- **Profil**: ubah nama & nomor HP (email diatur admin). Foto profil: unggah/seret file, potong bulat (perbesar, putar, balik), 8 filter + kecerahan/kontras, hapus foto, atau pilih avatar siap pakai / inisial nama. Server membaca ulang foto dengan GD dan menyimpannya sebagai WebP 512×512 di disk privat (metadata EXIF/GPS terbuang); foto disajikan lewat `/avatar/{user}/{versi}` khusus pengguna yang login.
+- **Keamanan**: ganti password, daftar sesi login aktif (browser, OS, IP), keluarkan satu sesi atau semua perangkat lain (wajib password).
+- **Tampilan**: terang / gelap / ikuti sistem (disimpan per perangkat).
+- **Akun**: hapus akun sendiri (password + ketik `HAPUS`). Admin/HRD/direktur aktif terakhir tidak bisa menghapus akunnya. Data penilaian & keputusan tetap tersimpan.
+- Notifikasi & menu akun ada di bar atas. Halaman login memutar animasi logo (bulatan naik tangga) sekali per sesi browser dan sesudah keluar; tidak diputar bila "kurangi gerakan" aktif.
+- Setelah `git pull`: `php artisan migrate` (kolom `avatar_path`, `avatar_preset`, `phone`) lalu `npm install && npm run build` (Cropper.js).
+
 ## Struktur kode
 
 | Lokasi | Isi |
