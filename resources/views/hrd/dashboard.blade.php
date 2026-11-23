@@ -110,6 +110,22 @@
                     </span>
                     <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
                 </a>
+                <a href="{{ route('hrd.sensitivity') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
+                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-ok-bg text-ok" aria-hidden="true"><x-icon name="scale" /></span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block font-semibold text-ink">Analisis sensitivitas</span>
+                        <span class="mt-0.5 block text-sm text-ink-muted">Uji kestabilan ranking terhadap perubahan bobot</span>
+                    </span>
+                    <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
+                </a>
+                <a href="{{ route('hrd.activity') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
+                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true"><x-icon name="history" /></span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block font-semibold text-ink">Log aktivitas</span>
+                        <span class="mt-0.5 block text-sm text-ink-muted">Siapa mengubah apa dan kapan</span>
+                    </span>
+                    <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
+                </a>
             </div>
         </x-panel>
 
@@ -194,6 +210,36 @@
                     </tbody>
                 </table>
             </div>
+        </x-panel>
+    </div>
+
+    <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(20rem,.85fr)]">
+        <x-panel title="Sebaran skor akhir" description="Jumlah karyawan di setiap rentang skor SAW periode ini." class="min-w-0">
+            <x-score-histogram :distribution="$distribution" />
+        </x-panel>
+
+        <x-panel title="Keputusan direktur" description="Status {{ $approvals['recommended'] }} kandidat yang direkomendasikan." class="min-w-0">
+            @if ($approvals['recommended'] === 0)
+                <x-empty-state icon="check-circle" title="Belum ada rekomendasi" body="Rekomendasi muncul setelah ranking dihitung." />
+            @else
+                <div class="flex h-3 w-full gap-px overflow-hidden rounded-full bg-line" role="img"
+                     aria-label="{{ $approvals['approved'] }} disetujui, {{ $approvals['rejected'] }} ditolak, {{ $approvals['revision'] }} review ulang, {{ $approvals['pending'] }} menunggu">
+                    @foreach (['approved' => 'bg-ok', 'rejected' => 'bg-bad', 'revision' => 'bg-brand', 'pending' => 'bg-[#D9A441]'] as $key => $color)
+                        @if ($approvals[$key])
+                            <span class="h-full {{ $color }}" style="width: {{ $approvals[$key] / $approvals['recommended'] * 100 }}%"></span>
+                        @endif
+                    @endforeach
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-3">
+                    @foreach ([['approved', 'Disetujui', 'bg-ok'], ['rejected', 'Ditolak', 'bg-bad'], ['revision', 'Review ulang', 'bg-brand'], ['pending', 'Menunggu', 'bg-[#D9A441]']] as [$key, $label, $color])
+                        <div class="flex items-center gap-2.5 rounded-ctl border border-line px-3 py-2.5">
+                            <span class="inline-block size-2.5 shrink-0 rounded-[3px] {{ $color }}" aria-hidden="true"></span>
+                            <dt class="min-w-0 flex-1 text-sm text-ink-muted">{{ $label }}</dt>
+                            <dd class="num font-bold">{{ $approvals[$key] }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            @endif
         </x-panel>
     </div>
 </x-app-layout>

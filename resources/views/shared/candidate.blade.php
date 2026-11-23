@@ -6,8 +6,8 @@
 @endphp
 
 <x-app-layout :title="$row['name']" :subtitle="$row['position'] . ' · ' . $row['department'] . ' · bergabung ' . Format::date($row['join_date'])" :back="$back">
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div class="space-y-6">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="min-w-0 space-y-6">
             {{-- Skor akhir + komposisinya --}}
             <x-panel>
                 <div class="flex flex-wrap items-end justify-between gap-6">
@@ -15,7 +15,7 @@
                         <p class="text-sm text-ink-muted">Skor akhir SAW</p>
                         <p class="num mt-1 text-2xl font-bold tracking-title">{{ Format::score($row['score']) }}</p>
                     </div>
-                    <dl class="flex gap-8 text-right">
+                    <dl class="flex flex-wrap gap-x-8 gap-y-3 sm:text-right">
                         <div>
                             <dt class="text-sm text-ink-muted">Peringkat</dt>
                             <dd class="num text-lg font-bold">{{ $row['rank'] }} <span class="text-base font-medium text-ink-muted">dari {{ $total }}</span></dd>
@@ -88,7 +88,7 @@
         </div>
 
         {{-- Kolom keputusan --}}
-        <div class="space-y-6">
+        <div class="min-w-0 space-y-6">
             <x-panel title="Status rekomendasi">
                 @if (! $row['recommended'])
                     <p class="text-ink-muted">Tidak masuk {{ \App\Queries\PromotionData::RECOMMENDED_COUNT }} besar, sehingga tidak diajukan untuk promosi periode ini.</p>
@@ -138,6 +138,12 @@
                     <p class="mt-3 text-ink-muted">{{ $period['status'] === 'ongoing' ? 'Menunggu keputusan direktur.' : 'Periode ditutup tanpa keputusan.' }}</p>
                 @endif
             </x-panel>
+
+            @if (count($history) > 0)
+                <x-panel title="Riwayat skor" description="Skor dan peringkat di setiap periode.">
+                    <x-score-trend :history="$history" :current-period-id="$period['id']" />
+                </x-panel>
+            @endif
 
             <x-panel title="Data penilaian">
                 <dl class="space-y-3 text-base">
