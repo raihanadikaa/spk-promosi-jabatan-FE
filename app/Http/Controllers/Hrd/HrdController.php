@@ -65,7 +65,7 @@ class HrdController extends Controller
         $employee = Employee::create($request->validated());
         Activity::log('karyawan.tambah', "Menambahkan karyawan {$employee->name} (NIK {$employee->nik}).", $employee);
 
-        return to_route('hrd.employees')->with('success', "{$employee->name} ditambahkan.");
+        return to_route('hrd.employees')->with('success', __(':name ditambahkan.', ['name' => $employee->name]));
     }
 
     public function updateEmployee(EmployeeRequest $request, Employee $employee): RedirectResponse
@@ -77,7 +77,7 @@ class HrdController extends Controller
             Activity::log('karyawan.ubah', "Mengubah data karyawan {$employee->name}: " . implode(', ', array_keys($changes)) . '.', $employee, properties: $changes);
         }
 
-        return to_route('hrd.employees')->with('success', "Data {$employee->name} diperbarui.");
+        return to_route('hrd.employees')->with('success', __('Data :name diperbarui.', ['name' => $employee->name]));
     }
 
     /** Impor banyak karyawan sekaligus dari CSV. Semua baris harus valid, kalau tidak dibatalkan seluruhnya. */
@@ -92,7 +92,7 @@ class HrdController extends Controller
         $count = $import->import($request->file('file')->getRealPath());
         Activity::log('karyawan.impor', "Mengimpor {$count} karyawan dari berkas CSV.", properties: ['jumlah' => $count]);
 
-        return to_route('hrd.employees')->with('success', "{$count} karyawan ditambahkan dari berkas.");
+        return to_route('hrd.employees')->with('success', __(':count karyawan ditambahkan dari berkas.', ['count' => $count]));
     }
 
     public function employeeTemplate(): StreamedResponse
@@ -129,7 +129,7 @@ class HrdController extends Controller
         $period = $periods->create($request->validated());
         Activity::log('periode.buat', "Membuat periode {$period->period_name} sebagai draft.", $period, $period);
 
-        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} dibuat sebagai draft.");
+        return to_route('hrd.periods')->with('success', __('Periode :period_name dibuat sebagai draft.', ['period_name' => $period->period_name]));
     }
 
     public function activatePeriod(AssessmentPeriod $period, PeriodService $periods): RedirectResponse
@@ -137,7 +137,7 @@ class HrdController extends Controller
         $periods->activate($period);
         Activity::log('periode.mulai', "Memulai periode {$period->period_name}.", $period, $period);
 
-        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} dimulai. Atasan sudah bisa mengisi nilai.");
+        return to_route('hrd.periods')->with('success', __('Periode :period_name dimulai. Atasan sudah bisa mengisi nilai.', ['period_name' => $period->period_name]));
     }
 
     public function closePeriod(AssessmentPeriod $period, PeriodService $periods): RedirectResponse
@@ -145,7 +145,7 @@ class HrdController extends Controller
         $periods->close($period);
         Activity::log('periode.tutup', "Menutup periode {$period->period_name}; nilai dan bobot terkunci.", $period, $period);
 
-        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} ditutup. Nilai dan bobot sekarang terkunci.");
+        return to_route('hrd.periods')->with('success', __('Periode :period_name ditutup. Nilai dan bobot sekarang terkunci.', ['period_name' => $period->period_name]));
     }
 
     public function updatePeriod(StorePeriodRequest $request, AssessmentPeriod $period, PeriodService $periods): RedirectResponse
@@ -153,7 +153,7 @@ class HrdController extends Controller
         $periods->update($period, $request->validated());
         Activity::log('periode.ubah', "Mengubah tanggal periode {$period->period_name}.", $period, $period, $request->validated());
 
-        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} diperbarui.");
+        return to_route('hrd.periods')->with('success', __('Periode :period_name diperbarui.', ['period_name' => $period->period_name]));
     }
 
     public function destroyPeriod(AssessmentPeriod $period, PeriodService $periods): RedirectResponse
@@ -161,7 +161,7 @@ class HrdController extends Controller
         $periods->delete($period);
         Activity::log('periode.hapus', "Menghapus periode draft {$period->period_name}.", properties: ['periode' => $period->period_name]);
 
-        return to_route('hrd.periods')->with('success', "Periode {$period->period_name} dihapus.");
+        return to_route('hrd.periods')->with('success', __('Periode :period_name dihapus.', ['period_name' => $period->period_name]));
     }
 
     /* ---------------- Kriteria & bobot ---------------- */
@@ -187,7 +187,7 @@ class HrdController extends Controller
     {
         $period = PromotionData::weightsPeriodModel();
         if (! $period || $period->status === AssessmentPeriod::CLOSED) {
-            throw ValidationException::withMessages(['criteria' => 'Bobot periode yang sudah ditutup tidak bisa diubah.']);
+            throw ValidationException::withMessages(['criteria' => __('Bobot periode yang sudah ditutup tidak bisa diubah.')]);
         }
 
         $changes = DB::transaction(function () use ($request, $period) {
@@ -222,7 +222,7 @@ class HrdController extends Controller
             Activity::log('kriteria.bobot', "Mengubah bobot periode {$period->period_name}: {$summary}.", $period, $period, $changes);
         }
 
-        return to_route('hrd.criteria')->with('success', 'Bobot kriteria disimpan. Hitung ulang ranking agar hasilnya ikut berubah.');
+        return to_route('hrd.criteria')->with('success', __('Bobot kriteria disimpan. Hitung ulang ranking agar hasilnya ikut berubah.'));
     }
 
     /** Salin bobot dari periode sebelumnya ke periode yang sedang diatur. */
@@ -230,12 +230,12 @@ class HrdController extends Controller
     {
         $period = PromotionData::weightsPeriodModel();
         if (! $period || $period->status === AssessmentPeriod::CLOSED) {
-            throw ValidationException::withMessages(['criteria' => 'Bobot periode yang sudah ditutup tidak bisa diubah.']);
+            throw ValidationException::withMessages(['criteria' => __('Bobot periode yang sudah ditutup tidak bisa diubah.')]);
         }
         $previous = $period->previous();
         $weights = $previous?->weights()->get(['criteria_id', 'weight_value', 'attribute_type'])->keyBy('criteria_id') ?? collect();
         if ($weights->isEmpty()) {
-            throw ValidationException::withMessages(['criteria' => 'Belum ada periode sebelumnya yang bobotnya bisa disalin.']);
+            throw ValidationException::withMessages(['criteria' => __('Belum ada periode sebelumnya yang bobotnya bisa disalin.')]);
         }
 
         DB::transaction(function () use ($period, $weights) {
@@ -252,7 +252,7 @@ class HrdController extends Controller
 
         Activity::log('kriteria.salin', "Menyalin bobot dari {$previous->period_name} ke {$period->period_name}.", $period, $period);
 
-        return to_route('hrd.criteria')->with('success', "Bobot disalin dari {$previous->period_name}. Hitung ulang ranking agar hasilnya ikut berubah.");
+        return to_route('hrd.criteria')->with('success', __('Bobot disalin dari :period_name. Hitung ulang ranking agar hasilnya ikut berubah.', ['period_name' => $previous->period_name]));
     }
 
     /* ---------------- Proses SAW ---------------- */
@@ -283,7 +283,7 @@ class HrdController extends Controller
     public function runSaw(RankingService $ranking): RedirectResponse
     {
         $period = PromotionData::currentPeriodModel()
-            ?? throw ValidationException::withMessages(['saw' => 'Belum ada periode penilaian.']);
+            ?? throw ValidationException::withMessages(['saw' => __('Belum ada periode penilaian.')]);
 
         $count = $ranking->calculate($period);
         Activity::log('saw.hitung', "Menghitung ranking SAW {$period->period_name} dari {$count} penilaian terkirim.", $period, $period, [
@@ -291,7 +291,7 @@ class HrdController extends Controller
             'bobot' => collect(PromotionData::criteria($period->id))->pluck('weight', 'code')->all(),
         ]);
 
-        return back()->with('success', "Ranking dihitung ulang dari {$count} penilaian terkirim.");
+        return back()->with('success', __('Ranking dihitung ulang dari :count penilaian terkirim.', ['count' => $count]));
     }
 
     public function reopenAssessment(Assessment $assessment, AssessmentService $service): RedirectResponse
@@ -299,7 +299,7 @@ class HrdController extends Controller
         $service->reopen($assessment);
         Activity::log('penilaian.buka', "Membuka kembali penilaian {$assessment->employee->name} untuk dikoreksi atasan.", $assessment, $assessment->period_id);
 
-        return back()->with('success', "Penilaian {$assessment->employee->name} dibuka kembali untuk dikoreksi atasan.");
+        return back()->with('success', __('Penilaian :name dibuka kembali untuk dikoreksi atasan.', ['name' => $assessment->employee->name]));
     }
 
     /* ---------------- Ranking ---------------- */

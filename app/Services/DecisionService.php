@@ -24,29 +24,29 @@ class DecisionService
             self::APPROVE => RankingResult::APPROVED,
             self::REJECT => RankingResult::REJECTED,
             self::REVISION => RankingResult::REVISION,
-            default => throw ValidationException::withMessages(['decision' => 'Keputusan tidak dikenal.']),
+            default => throw ValidationException::withMessages(['decision' => __('Keputusan tidak dikenal.')]),
         };
 
         if ($decision === self::REJECT && blank($note)) {
-            throw ValidationException::withMessages(['note' => 'Tulis alasan penolakan supaya HRD dan karyawan bisa menindaklanjuti.']);
+            throw ValidationException::withMessages(['note' => __('Tulis alasan penolakan supaya HRD dan karyawan bisa menindaklanjuti.')]);
         }
         if ($decision === self::REVISION && blank($note)) {
-            throw ValidationException::withMessages(['note' => 'Tulis apa yang perlu ditinjau ulang oleh HRD.']);
+            throw ValidationException::withMessages(['note' => __('Tulis apa yang perlu ditinjau ulang oleh HRD.')]);
         }
 
         $result = DB::transaction(function () use ($director, $result, $status, $note) {
             $result = RankingResult::whereKey($result->id)->with('period')->lockForUpdate()->firstOrFail();
 
             if (! $result->period->isOngoing()) {
-                throw ValidationException::withMessages(['note' => 'Periode sudah ditutup; keputusan tidak bisa diubah.']);
+                throw ValidationException::withMessages(['note' => __('Periode sudah ditutup; keputusan tidak bisa diubah.')]);
             }
             if (! $result->is_recommended) {
-                throw ValidationException::withMessages(['note' => 'Karyawan ini tidak termasuk rekomendasi promosi pada ranking terbaru.']);
+                throw ValidationException::withMessages(['note' => __('Karyawan ini tidak termasuk rekomendasi promosi pada ranking terbaru.')]);
             }
             if ($result->approval_status !== RankingResult::PENDING) {
                 throw ValidationException::withMessages(['note' => $result->approval_status === RankingResult::REVISION
-                    ? 'Rekomendasi ini sedang ditinjau ulang HRD. Tunggu ranking dihitung ulang.'
-                    : 'Rekomendasi ini sudah diputuskan.']);
+                    ? __('Rekomendasi ini sedang ditinjau ulang HRD. Tunggu ranking dihitung ulang.')
+                    : __('Rekomendasi ini sudah diputuskan.')]);
             }
 
             $result->update([

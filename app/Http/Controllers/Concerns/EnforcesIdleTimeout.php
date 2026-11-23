@@ -28,7 +28,7 @@ trait EnforcesIdleTimeout
 
             return redirect()
                 ->route('login')
-                ->with('error', 'Sesi Anda telah berakhir karena tidak aktif selama 30 menit. Silakan login kembali.');
+                ->with('error', __('Sesi Anda telah berakhir karena tidak aktif selama 30 menit. Silakan login kembali.'));
         }
 
         // perbarui timestamp aktivitas

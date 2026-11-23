@@ -57,12 +57,12 @@ class MonitorController extends Controller
     public function remind(Employee $employee): RedirectResponse
     {
         if (! $employee->supervisor_id || Employee::whereKey($employee->id)->withoutValidSupervisor()->exists()) {
-            return back()->withErrors(['monitor' => "{$employee->name} belum punya atasan penilai yang aktif. Atur dulu di halaman Karyawan."]);
+            return back()->withErrors(['monitor' => __(':name belum punya atasan penilai yang aktif. Atur dulu di halaman Karyawan.', ['name' => $employee->name])]);
         }
 
         $sent = $this->sendReminders([$employee->supervisor_id]);
 
-        return back()->with('success', $sent ? 'Pengingat terkirim ke ' . $employee->supervisor()->value('name') . '.' : 'Semua penilaian bawahan atasan ini sudah terkirim.');
+        return back()->with('success', $sent ? __('Pengingat terkirim ke ') . $employee->supervisor()->value('name') . '.' : __('Semua penilaian bawahan atasan ini sudah terkirim.'));
     }
 
     /** Ingatkan semua atasan yang masih punya penilaian belum terkirim. */
@@ -70,7 +70,7 @@ class MonitorController extends Controller
     {
         $sent = $this->sendReminders(null);
 
-        return back()->with('success', $sent ? "Pengingat terkirim ke {$sent} atasan." : 'Tidak ada atasan yang perlu diingatkan.');
+        return back()->with('success', $sent ? __('Pengingat terkirim ke :sent atasan.', ['sent' => $sent]) : __('Tidak ada atasan yang perlu diingatkan.'));
     }
 
     /**
@@ -81,7 +81,7 @@ class MonitorController extends Controller
     {
         $period = PromotionData::currentPeriodModel();
         if (! $period || $period->status !== AssessmentPeriod::ONGOING) {
-            throw ValidationException::withMessages(['monitor' => 'Pengingat hanya bisa dikirim saat periode sedang berlangsung.']);
+            throw ValidationException::withMessages(['monitor' => __('Pengingat hanya bisa dikirim saat periode sedang berlangsung.')]);
         }
 
         $unfinished = Employee::active()

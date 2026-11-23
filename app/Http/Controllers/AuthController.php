@@ -62,21 +62,26 @@ class AuthController extends Controller
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
-                return back()->withErrors(['email' => 'Akun Anda belum memiliki Role. Hubungi Administrator.']);
+                return back()->withErrors(['email' => __('Akun Anda belum memiliki Role. Hubungi Administrator.')]);
             }
 
             if (! $user->is_active) {
                 Auth::logout();
                 $request->session()->invalidate();
-                return back()->withErrors(['email' => 'Akun Anda dinonaktifkan. Hubungi Administrator.'])->onlyInput('email');
+                return back()->withErrors(['email' => __('Akun Anda dinonaktifkan. Hubungi Administrator.')])->onlyInput('email');
             }
 
-            $user->forceFill(['last_login_at' => now()])->saveQuietly();
+            // Bahasa yang dipilih di halaman login ikut tersimpan ke akun bila akun belum punya pilihan.
+            $chosen = $request->session()->get('locale');
+            $user->forceFill(['last_login_at' => now()] + (! $user->locale && $chosen ? ['locale' => $chosen] : []))->saveQuietly();
+            if ($user->locale) {
+                app()->setLocale($user->locale);
+            }
             \App\Support\Activity::log('akun.login', "{$user->name} masuk ke sistem.", $user);
 
             return redirect()
                 ->intended($user->dashboardUrl())
-                ->with('success', 'Selamat datang, ' . $user->name . '!');
+                ->with('success', __('Selamat datang, :name!', ['name' => $user->name]));
         }
 
         // NFR-SEC-05: catat kegagalan
@@ -84,12 +89,11 @@ class AuthController extends Controller
 
         $attempts = RateLimiter::attempts($this->throttleKey($request));
 
-        $msg = 'Email atau password salah.';
+        $msg = __('Email atau password salah.');
         if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
-            $msg = 'Email atau password salah. Akun terkunci sementara selama '
-                . ceil(self::LOCKOUT_SECONDS / 60) . ' menit.';
+            $msg = __('Email atau password salah. Akun terkunci sementara selama :n menit.', ['n' => ceil(self::LOCKOUT_SECONDS / 60)]);
         } elseif ($attempts >= 3) {
-            $msg .= ' Sisa percobaan: ' . (self::MAX_LOGIN_ATTEMPTS - $attempts) . ' kali.';
+            $msg .= ' ' . __('Sisa percobaan: :n kali.', ['n' => self::MAX_LOGIN_ATTEMPTS - $attempts]);
         }
 
         return back()
@@ -108,8 +112,7 @@ class AuthController extends Controller
         $seconds = RateLimiter::availableIn($key);
 
         throw ValidationException::withMessages([
-            'email' => 'Akun terkunci sementara karena terlalu banyak percobaan login. '
-                . 'Silakan coba lagi dalam ' . ceil($seconds / 60) . ' menit.',
+            'email' => __('Akun terkunci sementara karena terlalu banyak percobaan login. Silakan coba lagi dalam :n menit.', ['n' => ceil($seconds / 60)]),
         ]);
     }
 
@@ -120,15 +123,20 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        // Bahasa dibawa ke sesi baru: halaman login sesudah keluar tetap memakai bahasa pengguna.
+        $locale = $request->user()?->locale ?? $request->session()->get('locale');
         if ($user = Auth::user()) {
             \App\Support\Activity::log('akun.logout', "{$user->name} keluar dari sistem.", $user);
         }
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        if ($locale) {
+            $request->session()->put('locale', $locale);
+        }
 
         return redirect()
             ->route('login')
-            ->with('success', 'Anda telah berhasil logout.');
+            ->with('success', __('Anda telah berhasil logout.'));
     }
 }

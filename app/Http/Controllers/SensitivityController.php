@@ -37,7 +37,7 @@ class SensitivityController extends Controller
                 $custom[$code] = round((float) ($validated['bobot'][$code] ?? 0), 2);
             }
             if (abs(array_sum($custom) - 100) > 0.01) {
-                throw ValidationException::withMessages(['bobot' => 'Total bobot simulasi harus 100% (sekarang ' . rtrim(rtrim(number_format(array_sum($custom), 2, ',', ''), '0'), ',') . '%).']);
+                throw ValidationException::withMessages(['bobot' => __('Total bobot simulasi harus 100% (sekarang ') . rtrim(rtrim(number_format(array_sum($custom), 2, ',', ''), '0'), ',') . '%).']);
             }
         }
 

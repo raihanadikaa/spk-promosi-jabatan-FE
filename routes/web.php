@@ -106,6 +106,7 @@ Route::middleware(['auth', 'idle', 'role:admin'])->prefix('admin')->name('admin.
     Route::put('/pengguna/{user}', [AdminController::class, 'update'])->name('users.update');
     Route::post('/pengguna/{user}/status', [AdminController::class, 'toggle'])->name('users.toggle');
     Route::post('/pengguna/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset');
+    Route::delete('/pengguna/{user}', [AdminController::class, 'destroy'])->middleware('throttle:10,1')->name('users.destroy');
     Route::get('/log-aktivitas', [ActivityLogController::class, 'index'])->name('activity');
     Route::get('/log-aktivitas/unduh', [ActivityLogController::class, 'export'])->middleware('throttle:10,1')->name('activity.export');
 });
@@ -191,6 +192,7 @@ Route::middleware(['auth', 'idle', 'role:karyawan'])->prefix('karyawan')->name('
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'idle'])->prefix('notifikasi')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
     Route::get('/{id}', [NotificationController::class, 'open'])->whereUuid('id')->name('open');
     Route::post('/baca-semua', [NotificationController::class, 'readAll'])->name('read-all');
 });
@@ -205,9 +207,11 @@ Route::middleware(['auth', 'idle'])->prefix('akun')->name('account.')->group(fun
     Route::post('/foto', [SettingsController::class, 'uploadPhoto'])->middleware('throttle:10,1')->name('photo.upload');
     Route::delete('/foto', [SettingsController::class, 'deletePhoto'])->name('photo.delete');
     Route::put('/avatar', [SettingsController::class, 'setPreset'])->name('avatar.preset');
+    Route::put('/preferensi', [SettingsController::class, 'updatePreferences'])->middleware('throttle:60,1')->name('preferences');
     Route::delete('/sesi/{id}', [SettingsController::class, 'destroySession'])->where('id', '[A-Za-z0-9]{20,64}')->name('sessions.destroy');
     Route::post('/sesi/keluar-lainnya', [SettingsController::class, 'destroyOtherSessions'])->middleware('throttle:6,1')->name('sessions.others');
-    Route::delete('/', [SettingsController::class, 'destroyAccount'])->middleware('throttle:6,1')->name('destroy');
 });
 
-Route::get('/avatar/{user}/{v}', [SettingsController::class, 'avatar'])->middleware('auth')->where('v', '[A-Za-z0-9-]+')->name('avatar.show');
+Route::post('/bahasa', [\App\Http\Controllers\LocaleController::class, 'update'])->middleware('throttle:30,1')->name('locale.update');
+
+Route::get('/avatar/{user}/{v}', [SettingsController::class, 'avatar'])->middleware(['auth', 'idle'])->where('v', '[A-Za-z0-9-]+')->name('avatar.show');

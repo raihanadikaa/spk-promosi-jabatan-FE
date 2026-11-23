@@ -24,7 +24,7 @@ class IdleTimeout
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('error', 'Akun Anda dinonaktifkan. Hubungi Administrator.');
+            return redirect()->route('login')->with('error', __('Akun Anda dinonaktifkan. Hubungi Administrator.'));
         }
 
         return $this->enforceIdleTimeout($request) ?? $next($request);

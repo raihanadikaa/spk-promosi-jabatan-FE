@@ -21,7 +21,7 @@ class PeriodService
             ->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))
             ->exists();
         if ($overlap) {
-            throw ValidationException::withMessages(['start_date' => 'Rentang tanggal bertumpuk dengan periode lain.']);
+            throw ValidationException::withMessages(['start_date' => __('Rentang tanggal bertumpuk dengan periode lain.')]);
         }
     }
 
@@ -29,7 +29,7 @@ class PeriodService
     public function update(AssessmentPeriod $period, array $data): AssessmentPeriod
     {
         if ($period->status !== AssessmentPeriod::DRAFT) {
-            throw ValidationException::withMessages(['period' => 'Hanya periode berstatus draft yang bisa diubah.']);
+            throw ValidationException::withMessages(['period' => __('Hanya periode berstatus draft yang bisa diubah.')]);
         }
         $this->assertNoOverlap($data, $period->id);
         $period->update($data);
@@ -43,10 +43,10 @@ class PeriodService
         DB::transaction(function () use ($period) {
             $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
             if ($period->status !== AssessmentPeriod::DRAFT) {
-                throw ValidationException::withMessages(['period' => 'Periode yang sudah dimulai atau ditutup tidak bisa dihapus.']);
+                throw ValidationException::withMessages(['period' => __('Periode yang sudah dimulai atau ditutup tidak bisa dihapus.')]);
             }
             if ($period->assessments()->exists()) {
-                throw ValidationException::withMessages(['period' => 'Periode ini sudah punya penilaian, jadi tidak bisa dihapus.']);
+                throw ValidationException::withMessages(['period' => __('Periode ini sudah punya penilaian, jadi tidak bisa dihapus.')]);
             }
             $period->delete();
         });
@@ -88,10 +88,10 @@ class PeriodService
     {
         DB::transaction(function () use ($period) {
             if ($period->status !== AssessmentPeriod::DRAFT) {
-                throw ValidationException::withMessages(['period' => 'Hanya periode berstatus draft yang bisa dimulai.']);
+                throw ValidationException::withMessages(['period' => __('Hanya periode berstatus draft yang bisa dimulai.')]);
             }
             if (AssessmentPeriod::ongoing()->lockForUpdate()->exists()) {
-                throw ValidationException::withMessages(['period' => 'Masih ada periode yang berlangsung. Tutup periode itu dulu.']);
+                throw ValidationException::withMessages(['period' => __('Masih ada periode yang berlangsung. Tutup periode itu dulu.')]);
             }
 
             $period->update(['status' => AssessmentPeriod::ONGOING]);
@@ -104,17 +104,17 @@ class PeriodService
             $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
 
             if (! $period->isOngoing()) {
-                throw ValidationException::withMessages(['period' => 'Periode ini tidak sedang berlangsung.']);
+                throw ValidationException::withMessages(['period' => __('Periode ini tidak sedang berlangsung.')]);
             }
             if (! $period->calculated_at) {
-                throw ValidationException::withMessages(['period' => 'Ranking belum dihitung. Hitung ranking dulu sebelum menutup periode.']);
+                throw ValidationException::withMessages(['period' => __('Ranking belum dihitung. Hitung ranking dulu sebelum menutup periode.')]);
             }
 
             $undecided = RankingResult::where('period_id', $period->id)
                 ->whereIn('approval_status', [RankingResult::PENDING, RankingResult::REVISION])
                 ->count();
             if ($undecided > 0) {
-                throw ValidationException::withMessages(['period' => "Masih ada {$undecided} rekomendasi yang belum diputuskan direktur."]);
+                throw ValidationException::withMessages(['period' => __('Masih ada :undecided rekomendasi yang belum diputuskan direktur.', ['undecided' => $undecided])]);
             }
 
             $period->update(['status' => AssessmentPeriod::CLOSED]);

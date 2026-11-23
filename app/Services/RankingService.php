@@ -30,7 +30,7 @@ class RankingService
             $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
 
             if (! $period->isOngoing()) {
-                throw ValidationException::withMessages(['saw' => 'Ranking hanya bisa dihitung pada periode yang sedang berlangsung.']);
+                throw ValidationException::withMessages(['saw' => __('Ranking hanya bisa dihitung pada periode yang sedang berlangsung.')]);
             }
 
             $criteria = Criterion::orderBy('sort_order')->get();
@@ -38,7 +38,7 @@ class RankingService
             $types = $period->weights()->pluck('attribute_type', 'criteria_id');
             $total = (int) $weights->sum();
             if ($total !== 100 || $weights->count() !== $criteria->count()) {
-                throw ValidationException::withMessages(['saw' => "Total bobot kriteria masih {$total}%. Perbaiki di halaman Kriteria & bobot sebelum menghitung."]);
+                throw ValidationException::withMessages(['saw' => __('Total bobot kriteria masih :total%. Perbaiki di halaman Kriteria & bobot sebelum menghitung.', ['total' => $total])]);
             }
 
             $assessments = Assessment::query()
@@ -49,7 +49,7 @@ class RankingService
                 ->get();
 
             if ($assessments->isEmpty()) {
-                throw ValidationException::withMessages(['saw' => 'Belum ada penilaian yang dikirim atasan. Ranking bisa dihitung setelah minimal satu penilaian masuk.']);
+                throw ValidationException::withMessages(['saw' => __('Belum ada penilaian yang dikirim atasan. Ranking bisa dihitung setelah minimal satu penilaian masuk.')]);
             }
 
             $now = now();

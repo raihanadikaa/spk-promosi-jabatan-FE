@@ -34,7 +34,7 @@ class ProfileSettingsTest extends TestCase
 
         foreach (['admin', 'hrd', 'atasan', 'direktur', 'karyawan'] as $role) {
             $this->actingAs($this->as("$role@talentrank.test"))->get('/akun')->assertOk()
-                ->assertSee('Profil & pengaturan')->assertSee('Foto profil')->assertSee('Sesi login aktif')->assertSee('Hapus akun');
+                ->assertSee('Profil & pengaturan')->assertSee('Foto profil')->assertSee('Sesi login aktif')->assertSee('Penghapusan akun');
         }
     }
 
@@ -49,6 +49,9 @@ class ProfileSettingsTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'akun.profil', 'user_id' => $user->id]);
 
         $this->actingAs($user)->put('/akun/profil', ['name' => '<script>', 'phone' => 'abc'])->assertSessionHasErrors(['name', 'phone']);
+        // Tanpa kolom HP sama sekali: tidak error 500, HP dikosongkan.
+        $this->actingAs($user)->put('/akun/profil', ['name' => 'Rian Pratama'])->assertRedirect('/akun?tab=profil')->assertSessionHasNoErrors();
+        $this->assertNull($user->fresh()->phone);
         $this->actingAs($user)->put('/akun/profil', ['name' => ''])->assertSessionHasErrors('name');
     }
 
@@ -86,6 +89,8 @@ class ProfileSettingsTest extends TestCase
         $this->actingAs($user)->post('/akun/foto', ['photo' => UploadedFile::fake()->createWithContent('palsu.jpg', '<?php echo 1; ?>')])->assertSessionHasErrors('photo');
         $this->actingAs($user)->post('/akun/foto', ['photo' => UploadedFile::fake()->image('kecil.png', 20, 20)])->assertSessionHasErrors('photo');
         $this->actingAs($user)->post('/akun/foto', ['photo' => UploadedFile::fake()->image('besar.jpg', 500, 500)->size(6000)])->assertSessionHasErrors('photo');
+        // Dimensi raksasa ditolak sebelum dibaca GD (mencegah memori server habis).
+        $this->actingAs($user)->post('/akun/foto', ['photo' => UploadedFile::fake()->image('lebar.png', 5000, 80)])->assertSessionHasErrors('photo');
         $this->actingAs($user)->post('/akun/foto', [])->assertSessionHasErrors('photo');
         $this->assertNull($user->fresh()->avatar_path);
     }
@@ -150,35 +155,14 @@ class ProfileSettingsTest extends TestCase
         $this->assertNotSame($token, $user->fresh()->remember_token);
     }
 
-    public function test_hapus_akun_dengan_password_dan_konfirmasi_data_tetap_aman(): void
+    public function test_intro_logo_diputar_setiap_buka_login_kecuali_sesudah_login_gagal(): void
     {
-        $user = $this->as('karyawan@talentrank.test');
-        $employee = Employee::where('user_id', $user->id)->firstOrFail();
+        $this->get('/login')->assertOk()->assertSee('tr-intro-on', false)->assertSee('id="tr-intro"', false);
+        $this->get('/login')->assertSee('tr-intro-on', false); // muat ulang: tetap diputar
 
-        $this->actingAs($user)->delete('/akun', ['password' => 'password', 'confirmation' => 'hapus'])->assertSessionHasErrorsIn('deleteAccount', 'confirmation');
-        $this->actingAs($user)->delete('/akun', ['password' => 'salah', 'confirmation' => 'HAPUS'])->assertSessionHasErrorsIn('deleteAccount', 'password');
-        $this->assertModelExists($user);
-
-        $this->actingAs($user)->delete('/akun', ['password' => 'password', 'confirmation' => 'HAPUS'])->assertRedirect('/login');
-        $this->assertModelMissing($user);
-        $this->assertGuest();
-        $this->assertNull($employee->fresh()->user_id); // data karyawan & penilaian tetap ada
-        $this->assertDatabaseHas('activity_logs', ['action' => 'akun.hapus', 'user_name' => 'Rian Pratama']);
-    }
-
-    public function test_hrd_atau_admin_terakhir_tidak_bisa_menghapus_akunnya(): void
-    {
-        foreach (['hrd@talentrank.test', 'admin@talentrank.test', 'direktur@talentrank.test'] as $email) {
-            $user = $this->as($email);
-            $this->actingAs($user)->get('/akun?tab=akun')->assertSee('satu-satunya');
-            $this->actingAs($user)->delete('/akun', ['password' => 'password', 'confirmation' => 'HAPUS'])->assertSessionHasErrorsIn('deleteAccount', 'confirmation');
-            $this->assertModelExists($user);
-        }
-
-        // Atasan boleh (masih ada atasan lain), tetapi bawahannya terdeteksi tanpa atasan penilai.
-        $manager = $this->as('atasan@talentrank.test');
-        $this->actingAs($manager)->delete('/akun', ['password' => 'password', 'confirmation' => 'HAPUS'])->assertRedirect('/login');
-        $this->assertModelMissing($manager);
+        $this->from('/login')->post('/login', ['email' => 'hrd@talentrank.test', 'password' => 'salah'])->assertRedirect('/login');
+        $this->get('/login')->assertOk()->assertDontSee("classList.add('tr-intro-on')", false);
+        $this->get('/login')->assertSee("classList.add('tr-intro-on')", false); // pesan error sudah hilang → diputar lagi
     }
 
     public function test_menu_akun_dan_notifikasi_ada_di_bar_atas(): void

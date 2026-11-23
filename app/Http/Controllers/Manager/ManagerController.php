@@ -71,8 +71,8 @@ class ManagerController extends Controller
         );
 
         return $submit
-            ? to_route('manager.assessments')->with('success', "Penilaian {$target->name} dikirim ke HRD.")
-            : to_route('manager.assessments.edit', $target->id)->with('success', 'Draft penilaian disimpan.');
+            ? to_route('manager.assessments')->with('success', __('Penilaian :name dikirim ke HRD.', ['name' => $target->name]))
+            : to_route('manager.assessments.edit', $target->id)->with('success', __('Draft penilaian disimpan.'));
     }
 
     public function ranking(Request $request): View

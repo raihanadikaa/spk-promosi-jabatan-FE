@@ -240,7 +240,7 @@ class PromotionData
             'join_date' => $e->join_date->toDateString(),
             'tenure' => $e->tenureAt($end),
             'assessor' => match (true) {
-                ! $e->supervisor => 'Belum ditentukan',
+                ! $e->supervisor => __('Belum ditentukan'),
                 ! self::isValidSupervisor($e->supervisor) => $e->supervisor->name . ' (tidak aktif sebagai atasan)',
                 default => $e->supervisor->name,
             },

@@ -18,8 +18,14 @@ class RevisionRequested extends Notification
     public function toArray(object $notifiable): array
     {
         return [
+            // Teks Indonesia tetap disimpan (cadangan); tampilan memakai kunci + data supaya mengikuti bahasa pembaca.
             'title' => 'Permintaan review ulang',
             'body' => "{$this->director} meminta review ulang untuk {$this->result->employee->name}: {$this->result->approval_note}",
+            'i18n' => [
+                'title' => 'Permintaan review ulang',
+                'body' => ':director meminta review ulang untuk :employee: :note',
+                'params' => ['director' => $this->director, 'employee' => $this->result->employee->name, 'note' => (string) $this->result->approval_note],
+            ],
             'url' => route('hrd.ranking.show', $this->result->employee_id, false),
         ];
     }

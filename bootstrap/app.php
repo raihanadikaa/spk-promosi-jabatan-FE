@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // 3. Header keamanan (CSP, anti-clickjacking, dll) untuk semua halaman web
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\SetLocale::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

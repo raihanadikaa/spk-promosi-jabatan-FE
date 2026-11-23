@@ -27,10 +27,10 @@ class EmployeeImportService
     {
         $rows = $this->read($path);
         if (! $rows) {
-            throw ValidationException::withMessages(['file' => 'Berkas tidak berisi data karyawan.']);
+            throw ValidationException::withMessages(['file' => __('Berkas tidak berisi data karyawan.')]);
         }
         if (count($rows) > self::MAX_ROWS) {
-            throw ValidationException::withMessages(['file' => 'Maksimal ' . self::MAX_ROWS . ' baris per impor.']);
+            throw ValidationException::withMessages(['file' => __('Maksimal :n baris per impor.', ['n' => self::MAX_ROWS])]);
         }
 
         $departments = Department::pluck('id', 'department_name')->mapWithKeys(fn ($id, $n) => [mb_strtolower($n) => $id]);
@@ -86,7 +86,7 @@ class EmployeeImportService
 
         if ($errors) {
             $more = count($errors) > 5 ? ' (+' . (count($errors) - 5) . ' baris lain bermasalah)' : '';
-            throw ValidationException::withMessages(['file' => 'Impor dibatalkan, tidak ada data yang disimpan. ' . implode(' ', array_slice($errors, 0, 5)) . $more]);
+            throw ValidationException::withMessages(['file' => __('Impor dibatalkan, tidak ada data yang disimpan. ') . implode(' ', array_slice($errors, 0, 5)) . $more]);
         }
 
         DB::transaction(fn () => collect($data)->each(fn ($row) => Employee::create($row)));
@@ -114,7 +114,7 @@ class EmployeeImportService
                 $header = array_map(fn ($h) => mb_strtolower(trim(preg_replace('/^\xEF\xBB\xBF/', '', (string) $h))), $cells);
                 if (array_diff(array_slice(self::HEADER, 0, 5), $header)) {
                     fclose($handle);
-                    throw ValidationException::withMessages(['file' => 'Judul kolom tidak sesuai templat. Kolom wajib: ' . implode('; ', array_slice(self::HEADER, 0, 5)) . '.']);
+                    throw ValidationException::withMessages(['file' => __('Judul kolom tidak sesuai templat. Kolom wajib: ') . implode('; ', array_slice(self::HEADER, 0, 5)) . '.']);
                 }
                 continue;
             }
