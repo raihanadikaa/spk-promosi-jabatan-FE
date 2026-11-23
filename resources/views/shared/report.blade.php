@@ -17,7 +17,7 @@
         <x-btn icon="download" x-on:click="window.print()">Cetak / simpan PDF</x-btn>
     </div>
 
-    <main class="mx-auto mb-10 max-w-5xl rounded-panel border border-line bg-surface p-8 shadow-sm print:m-0 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
+    <main class="mx-auto mb-10 max-w-5xl rounded-panel border border-line bg-surface p-5 shadow-sm sm:p-8 print:m-0 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <header class="flex items-start justify-between gap-6 border-b-2 border-ink pb-4">
             <div class="flex items-center gap-3">
                 <x-logo />
@@ -67,7 +67,8 @@
         @if (empty($rows))
             <p class="mt-4 rounded-ctl border border-line bg-canvas px-4 py-6 text-center text-ink-muted">Ranking periode ini belum dihitung.</p>
         @else
-            <table class="mt-3 w-full border-collapse text-sm">
+            <div class="mt-3 overflow-x-auto print:overflow-visible">
+            <table class="w-full min-w-[640px] border-collapse text-sm print:min-w-0">
                 <thead>
                     <tr class="border-b border-line-strong text-left text-xs uppercase tracking-wide text-ink-muted">
                         <th class="py-2 pr-2 font-semibold">#</th>
@@ -101,6 +102,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         @endif
 
         <div class="mt-12 grid break-inside-avoid grid-cols-2 gap-10 text-sm">

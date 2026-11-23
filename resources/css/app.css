@@ -17,6 +17,17 @@
         @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-surface;
     }
 
+    /* Teks sr-only (position: absolute) di dalam tabel yang bisa digeser ikut "lolos" dari kotak geser
+       dan membuat seluruh halaman melebar di HP. Kotak geser dijadikan acuan posisinya. */
+    .overflow-x-auto {
+        position: relative;
+    }
+
+    /* fieldset bawaan browser punya min-width: min-content, sehingga tabel lebar di dalamnya mendorong halaman. */
+    fieldset {
+        min-width: 0;
+    }
+
     [x-cloak] {
         display: none !important;
     }
