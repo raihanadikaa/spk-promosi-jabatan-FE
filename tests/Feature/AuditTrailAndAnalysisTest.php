@@ -163,6 +163,17 @@ class AuditTrailAndAnalysisTest extends TestCase
         $this->assertEquals(1.0, $best['normalized']['C4']);
     }
 
+    public function test_proses_saw_memperingatkan_kriteria_cost_dengan_nilai_nol(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $this->actingAs($hrd)->post('/hrd/proses-saw')->assertSessionHasNoErrors();
+        PromotionData::flush();
+        $minC4 = PromotionData::bounds(PromotionData::currentPeriod())['C4'];
+
+        $page = $this->actingAs($hrd)->get('/hrd/proses-saw')->assertOk();
+        $minC4 == 0.0 ? $page->assertSee('ada peserta bernilai 0') : $page->assertDontSee('ada peserta bernilai 0');
+    }
+
     /* ---------------- Analisis sensitivitas ---------------- */
 
     public function test_geser_bobot_menjaga_total_100_dan_proporsi_kriteria_lain(): void
