@@ -69,9 +69,9 @@ class DirekturController extends Controller
         }, $result, $period, array_filter(['catatan' => $validated['note'] ?? null, 'skor' => $result->final_score]));
 
         return to_route('direktur.approvals')->with('success', match ($validated['decision']) {
-            'approve' => 'Promosi disetujui.',
-            'reject' => 'Rekomendasi promosi ditolak.',
-            'revision' => 'Permintaan review ulang dikirim ke HRD.',
+            'approve' => __('Promosi disetujui.'),
+            'reject' => __('Rekomendasi promosi ditolak.'),
+            'revision' => __('Permintaan review ulang dikirim ke HRD.'),
         });
     }
 

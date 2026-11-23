@@ -12,9 +12,9 @@
         <div class="flex flex-wrap items-center justify-between gap-6">
             <div class="min-w-0 flex-1">
                 <p class="text-sm text-ink-muted">Penilaian terkirim</p>
-                <p class="num mt-1 text-2xl font-bold tracking-title">{{ $counts['submitted'] }} <span class="text-lg font-semibold text-ink-muted">dari {{ $counts['total'] }}</span></p>
+                <p class="num mt-1 text-2xl font-bold tracking-title"><span data-countup>{{ $counts['submitted'] }}</span> <span class="text-lg font-semibold text-ink-muted">dari {{ $counts['total'] }}</span></p>
                 <div class="mt-3 h-2 max-w-md overflow-hidden rounded-full bg-line" aria-hidden="true">
-                    <div class="h-full rounded-full bg-ok" style="width: {{ $counts['submitted'] / max(1, $counts['total']) * 100 }}%"></div>
+                    <div class="tr-bar h-full rounded-full bg-ok" style="width: {{ $counts['submitted'] / max(1, $counts['total']) * 100 }}%"></div>
                 </div>
                 <p class="mt-3 text-ink-muted">
                     Batas pengisian <span class="font-semibold text-ink">{{ Format::date($period['deadline']) }}</span>
@@ -45,7 +45,7 @@
             @if ($recent->isEmpty())
                 <x-empty-state icon="users" title="Belum ada bawahan" />
             @else
-                <ul class="divide-y divide-line">
+                <ul class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                     @foreach ($recent as $e)
                         <li class="flex items-center justify-between gap-3 px-5 py-3">
                             <div class="min-w-0">
@@ -69,7 +69,7 @@
             @if (empty($ranking))
                 <x-empty-state icon="trophy" title="Belum ada ranking" body="Ranking muncul setelah HRD menghitung skor periode ini." />
             @else
-                <ol class="divide-y divide-line">
+                <ol class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                     @foreach ($ranking as $row)
                         <li>@include('partials.ranking-row', ['row' => $row, 'href' => null])</li>
                     @endforeach

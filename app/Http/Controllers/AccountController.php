@@ -49,6 +49,6 @@ class AccountController extends Controller
 
         \App\Support\Activity::log('akun.password', "{$user->name} mengganti password sendiri.", $user);
 
-        return back()->with('success', 'Password berhasil diganti.');
+        return back()->with('success', __('Password berhasil diganti.'));
     }
 }

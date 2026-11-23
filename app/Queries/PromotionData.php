@@ -14,7 +14,9 @@ use App\Models\RankingResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lapisan baca untuk view: mengubah data Eloquent menjadi array siap tampil.
@@ -238,7 +240,7 @@ class PromotionData
             'join_date' => $e->join_date->toDateString(),
             'tenure' => $e->tenureAt($end),
             'assessor' => match (true) {
-                ! $e->supervisor => 'Belum ditentukan',
+                ! $e->supervisor => __('Belum ditentukan'),
                 ! self::isValidSupervisor($e->supervisor) => $e->supervisor->name . ' (tidak aktif sebagai atasan)',
                 default => $e->supervisor->name,
             },
@@ -437,10 +439,20 @@ class PromotionData
             ->with(['department:id,department_name', 'position:id,position_name,level', 'supervisor:id,name'])
             ->get()->keyBy('id');
 
-        $assessments = Assessment::where('period_id', $period['id'])
+        // Dibaca sebagai baris biasa (bukan model Eloquent): ribuan karyawan × 5 kriteria
+        // = puluhan ribu model, dan membuatnya jauh lebih mahal daripada query-nya sendiri.
+        $assessments = DB::table('assessments')
+            ->where('period_id', $period['id'])
             ->whereIn('employee_id', $ids)
-            ->with('details.normalized')
-            ->get()->keyBy('employee_id');
+            ->get(['id', 'employee_id', 'submitted_at'])
+            ->keyBy('employee_id');
+        $detailsByAssessment = DB::table('assessment_details as d')
+            ->leftJoin('normalized_scores as n', 'n.assessment_detail_id', '=', 'd.id')
+            ->whereIn('d.assessment_id', $assessments->pluck('id'))
+            ->orderBy('d.id')
+            ->get(['d.assessment_id', 'd.criteria_id', 'd.raw_score', 'n.normalized_value', 'n.weighted_value'])
+            ->groupBy('assessment_id');
+        $tenureByDate = [];
 
         $approvers = \App\Models\User::whereIn('id', $results->pluck('approved_by')->filter()->unique())->pluck('name', 'id');
 
@@ -458,12 +470,16 @@ class PromotionData
             $a = $assessments[$r->employee_id] ?? null;
 
             $raw = $normalized = $contributions = [];
-            foreach (($a?->details ?? collect())->sortBy(fn ($d) => $codes[$d->criteria_id]) as $d) {
+            $details = $a ? ($detailsByAssessment[$a->id] ?? collect())->all() : [];
+            usort($details, fn ($x, $y) => $codes[$x->criteria_id] <=> $codes[$y->criteria_id]); // urut kode kriteria, sama seperti sebelumnya
+            foreach ($details as $d) {
                 $code = $codes[$d->criteria_id];
-                $raw[$code] = $d->raw_score;
-                $normalized[$code] = $d->normalized?->normalized_value ?? 0.0;
-                $contributions[$code] = $d->normalized?->weighted_value ?? 0.0;
+                $raw[$code] = (float) $d->raw_score;
+                $normalized[$code] = $d->normalized_value !== null ? (float) $d->normalized_value : 0.0;
+                $contributions[$code] = $d->weighted_value !== null ? (float) $d->weighted_value : 0.0;
             }
+            $joinDate = $e->join_date->toDateString();
+            $tenureByDate[$joinDate] ??= $e->tenureAt($end);
 
             $rows[$r->employee_id] = [
                 'id' => $e->id,
@@ -472,10 +488,10 @@ class PromotionData
                 'department' => $e->department->department_name,
                 'position' => $e->position->position_name,
                 'proposed_position' => self::nextPosition($e->position->level),
-                'join_date' => $e->join_date->toDateString(),
-                'tenure' => $e->tenureAt($end),
+                'join_date' => $joinDate,
+                'tenure' => $tenureByDate[$joinDate],
                 'assessor' => $e->supervisor?->name ?? '–',
-                'submitted_at' => $a?->submitted_at?->format('Y-m-d H:i'),
+                'submitted_at' => $a?->submitted_at ? Carbon::parse($a->submitted_at)->format('Y-m-d H:i') : null,
                 'raw' => $raw,
                 'normalized' => $normalized,
                 'contributions' => $contributions,

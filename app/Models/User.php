@@ -50,6 +50,14 @@ class User extends Authenticatable
         ];
     }
 
+    /** URL foto profil (melalui route terlindungi, berganti nama file setiap foto baru → cache aman), null bila tidak ada. */
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path
+            ? route('avatar.show', ['user' => $this->id, 'v' => pathinfo($this->avatar_path, PATHINFO_FILENAME)])
+            : null;
+    }
+
     /**
      * Relasi ke tabel Role
      */

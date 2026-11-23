@@ -1,11 +1,11 @@
 @php use App\Support\Format; @endphp
 {{-- Laporan hasil ranking siap cetak. "Cetak / simpan PDF" memakai dialog cetak browser, jadi tanpa pustaka PDF. --}}
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">{{-- laporan berupa "kertas": selalu terang --}}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Laporan ranking {{ $period['name'] }} — TalentRank</title>
+    <title>TalentRank</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -14,7 +14,17 @@
         <a href="{{ $back }}" class="inline-flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink">
             <x-icon name="chevron-left" class="size-4" /> Kembali ke ranking
         </a>
-        <x-btn icon="download" x-on:click="window.print()">Cetak / simpan PDF</x-btn>
+        <div class="flex flex-wrap items-center justify-end gap-3">
+            {{-- Pilihan cakupan: semua peserta atau hanya kandidat yang direkomendasikan --}}
+            <div class="inline-flex rounded-ctl border border-line-strong bg-surface p-0.5 text-sm" role="group" aria-label="Cakupan laporan">
+                @foreach (['semua' => 'Semua peserta', 'rekomendasi' => 'Hanya direkomendasikan'] as $key => $label)
+                    <a href="{{ request()->fullUrlWithQuery(['cakupan' => $key === 'semua' ? null : $key]) }}"
+                       @class(['rounded-[0.4rem] px-3 py-1.5 font-semibold transition-colors', 'bg-brand text-white shadow-sm' => $scope === $key, 'text-ink-muted hover:bg-canvas hover:text-ink' => $scope !== $key])
+                       @if ($scope === $key) aria-current="true" @endif>{{ $label }}</a>
+                @endforeach
+            </div>
+            <x-btn icon="download" x-on:click="window.print()">Cetak / simpan PDF</x-btn>
+        </div>
     </div>
 
     <main class="mx-auto mb-10 max-w-5xl rounded-panel border border-line bg-surface p-5 shadow-sm sm:p-8 print:m-0 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
@@ -37,7 +47,7 @@
             <div><dt class="text-ink-muted">Periode</dt><dd class="font-semibold">{{ $period['name'] }}</dd></div>
             <div><dt class="text-ink-muted">Rentang</dt><dd class="font-semibold">{{ Format::date($period['start']) }} – {{ Format::date($period['end']) }}</dd></div>
             <div><dt class="text-ink-muted">Ranking dihitung</dt><dd class="font-semibold">{{ $period['calculated_at'] ? Format::dateTime($period['calculated_at']) : 'Belum dihitung' }}</dd></div>
-            <div><dt class="text-ink-muted">Jumlah karyawan</dt><dd class="num font-semibold">{{ count($rows) }}</dd></div>
+            <div><dt class="text-ink-muted">Jumlah karyawan</dt><dd class="num font-semibold">{{ count($rows) }}@if ($scope === 'rekomendasi') <span class="font-normal text-ink-muted">direkomendasikan dari {{ $total }}</span>@endif</dd></div>
         </dl>
 
         <h2 class="mt-7 text-md font-bold">Kriteria dan bobot</h2>
@@ -65,7 +75,7 @@
         <h2 class="mt-7 text-md font-bold">Hasil ranking</h2>
         <p class="mt-1 text-sm text-ink-muted">Kolom kriteria berisi nilai ternormalisasi (r). Skor akhir V = Σ bobot × r. {{ \App\Queries\PromotionData::RECOMMENDED_COUNT }} peringkat teratas direkomendasikan.</p>
         @if (empty($rows))
-            <p class="mt-4 rounded-ctl border border-line bg-canvas px-4 py-6 text-center text-ink-muted">Ranking periode ini belum dihitung.</p>
+            <p class="mt-4 rounded-ctl border border-line bg-canvas px-4 py-6 text-center text-ink-muted">{{ $scope === 'rekomendasi' && $total > 0 ? 'Belum ada kandidat yang direkomendasikan.' : 'Ranking periode ini belum dihitung.' }}</p>
         @else
             <div class="mt-3 overflow-x-auto print:overflow-visible">
             <table class="w-full min-w-[640px] border-collapse text-sm print:min-w-0">

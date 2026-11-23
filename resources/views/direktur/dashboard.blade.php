@@ -25,9 +25,9 @@
         @if ($waiting->isEmpty())
             <x-panel><x-empty-state icon="check-circle" title="Tidak ada yang menunggu" body="Semua rekomendasi periode ini sudah Anda putuskan." /></x-panel>
         @else
-            <div class="grid gap-4 lg:grid-cols-2">
+            <div class="tr-stagger grid gap-4 lg:grid-cols-2">
                 @foreach ($waiting as $row)
-                    <x-panel>
+                    <x-panel class="tr-card">
                         <div class="flex items-start gap-4">
                             <x-rank :value="$row['rank']" />
                             <div class="min-w-0 flex-1">
@@ -54,11 +54,12 @@
 
     @if ($decided->isNotEmpty())
         <x-panel class="mt-8" title="Sudah diputuskan" flush>
-            <ul class="divide-y divide-line">
+            <ul class="tr-stagger divide-y divide-line">
                 @foreach ($decided as $row)
                     <li class="flex flex-wrap items-center gap-4 px-5 py-3.5">
                         <x-rank :value="$row['rank']" />
-                        <div class="min-w-0 flex-1">
+                        {{-- min-w: di HP catatan tidak terjepit jadi kolom sempit; status & tanggal turun ke baris berikutnya --}}
+                        <div class="min-w-[12rem] flex-1">
                             <a href="{{ route('direktur.ranking.show', $row['id']) }}" class="font-semibold hover:text-brand hover:underline">{{ $row['name'] }}</a>
                             <p class="text-sm text-ink-muted">{{ $row['approval_note'] }}</p>
                         </div>

@@ -9,8 +9,8 @@
         'brand' => 'bg-brand-soft text-brand',
     ];
 @endphp
-<article {{ $attributes->merge(['class' => 'flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm']) }}>
-    <span class="grid size-11 shrink-0 place-items-center rounded-ctl {{ $tones[$tone] ?? $tones['info'] }}" aria-hidden="true">
+<article {{ $attributes->merge(['class' => 'tr-card flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm']) }}>
+    <span class="tr-icon grid size-11 shrink-0 place-items-center rounded-ctl {{ $tones[$tone] ?? $tones['info'] }}" aria-hidden="true">
         <x-icon :name="$icon" />
     </span>
     <div class="min-w-0">

@@ -36,7 +36,7 @@ class OrganizationController extends Controller
         $department = Department::create($data);
         Activity::log('karyawan.departemen', "Menambahkan departemen {$department->department_name}.", $department);
 
-        return to_route('hrd.organization')->with('success', "Departemen {$data['department_name']} ditambahkan.");
+        return to_route('hrd.organization')->with('success', __('Departemen :department_name ditambahkan.', ['department_name' => $data['department_name']]));
     }
 
     public function updateDepartment(Request $request, Department $department): RedirectResponse
@@ -45,18 +45,18 @@ class OrganizationController extends Controller
         $department->update($this->validateDepartment($request, $department));
         Activity::log('karyawan.departemen', "Mengubah departemen {$old} menjadi {$department->department_name}.", $department);
 
-        return to_route('hrd.organization')->with('success', 'Departemen diperbarui.');
+        return to_route('hrd.organization')->with('success', __('Departemen diperbarui.'));
     }
 
     public function destroyDepartment(Department $department): RedirectResponse
     {
         if ($department->employees()->exists()) {
-            return to_route('hrd.organization')->withErrors(['organization' => "Departemen {$department->department_name} masih dipakai karyawan, jadi tidak bisa dihapus."]);
+            return to_route('hrd.organization')->withErrors(['organization' => __('Departemen :department_name masih dipakai karyawan, jadi tidak bisa dihapus.', ['department_name' => $department->department_name])]);
         }
         $department->delete();
         Activity::log('karyawan.departemen', "Menghapus departemen {$department->department_name}.");
 
-        return to_route('hrd.organization')->with('success', "Departemen {$department->department_name} dihapus.");
+        return to_route('hrd.organization')->with('success', __('Departemen :department_name dihapus.', ['department_name' => $department->department_name]));
     }
 
     /* ---------------- Jabatan ---------------- */
@@ -67,7 +67,7 @@ class OrganizationController extends Controller
         $position = Position::create($data);
         Activity::log('karyawan.jabatan', "Menambahkan jabatan {$position->position_name} (level {$position->level}).", $position);
 
-        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', "Jabatan {$data['position_name']} ditambahkan.");
+        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', __('Jabatan :position_name ditambahkan.', ['position_name' => $data['position_name']]));
     }
 
     public function updatePosition(Request $request, Position $position): RedirectResponse
@@ -76,18 +76,18 @@ class OrganizationController extends Controller
         $position->update($this->validatePosition($request, $position));
         Activity::log('karyawan.jabatan', "Mengubah jabatan {$old} menjadi {$position->position_name} (level {$position->level}).", $position);
 
-        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', 'Jabatan diperbarui.');
+        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', __('Jabatan diperbarui.'));
     }
 
     public function destroyPosition(Position $position): RedirectResponse
     {
         if ($position->employees()->exists()) {
-            return to_route('hrd.organization', ['tab' => 'jabatan'])->withErrors(['organization' => "Jabatan {$position->position_name} masih dipakai karyawan, jadi tidak bisa dihapus."]);
+            return to_route('hrd.organization', ['tab' => 'jabatan'])->withErrors(['organization' => __('Jabatan :position_name masih dipakai karyawan, jadi tidak bisa dihapus.', ['position_name' => $position->position_name])]);
         }
         $position->delete();
         Activity::log('karyawan.jabatan', "Menghapus jabatan {$position->position_name}.");
 
-        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', "Jabatan {$position->position_name} dihapus.");
+        return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', __('Jabatan :position_name dihapus.', ['position_name' => $position->position_name]));
     }
 
     private function validateDepartment(Request $request, ?Department $department = null): array

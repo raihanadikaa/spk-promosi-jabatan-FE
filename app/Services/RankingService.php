@@ -30,7 +30,7 @@ class RankingService
             $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
 
             if (! $period->isOngoing()) {
-                throw ValidationException::withMessages(['saw' => 'Ranking hanya bisa dihitung pada periode yang sedang berlangsung.']);
+                throw ValidationException::withMessages(['saw' => __('Ranking hanya bisa dihitung pada periode yang sedang berlangsung.')]);
             }
 
             $criteria = Criterion::orderBy('sort_order')->get();
@@ -38,7 +38,7 @@ class RankingService
             $types = $period->weights()->pluck('attribute_type', 'criteria_id');
             $total = (int) $weights->sum();
             if ($total !== 100 || $weights->count() !== $criteria->count()) {
-                throw ValidationException::withMessages(['saw' => "Total bobot kriteria masih {$total}%. Perbaiki di halaman Kriteria & bobot sebelum menghitung."]);
+                throw ValidationException::withMessages(['saw' => __('Total bobot kriteria masih :total%. Perbaiki di halaman Kriteria & bobot sebelum menghitung.', ['total' => $total])]);
             }
 
             $assessments = Assessment::query()
@@ -49,17 +49,31 @@ class RankingService
                 ->get();
 
             if ($assessments->isEmpty()) {
-                throw ValidationException::withMessages(['saw' => 'Belum ada penilaian yang dikirim atasan. Ranking bisa dihitung setelah minimal satu penilaian masuk.']);
+                throw ValidationException::withMessages(['saw' => __('Belum ada penilaian yang dikirim atasan. Ranking bisa dihitung setelah minimal satu penilaian masuk.')]);
             }
 
+            $now = now();
+
             // 1. Kriteria otomatis (masa kerja) dihitung ulang sesuai akhir periode.
+            //    Disimpan massal (upsert per 500 baris): satu-per-satu = ribuan query saat karyawannya ribuan.
             foreach ($criteria->filter->isAuto() as $auto) {
+                $rows = $assessments->map(fn ($a) => [
+                    'assessment_id' => $a->id,
+                    'criteria_id' => $auto->id,
+                    'raw_score' => $a->employee->tenureAt($period->end_date),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all();
+                foreach (array_chunk($rows, 500) as $chunk) {
+                    AssessmentDetail::upsert($chunk, ['assessment_id', 'criteria_id'], ['raw_score', 'updated_at']);
+                }
+
+                $fresh = AssessmentDetail::where('criteria_id', $auto->id)
+                    ->whereIn('assessment_id', Assessment::select('id')->where('period_id', $period->id)->where('status', Assessment::SUBMITTED))
+                    ->get()
+                    ->keyBy('assessment_id');
                 foreach ($assessments as $a) {
-                    $detail = AssessmentDetail::updateOrCreate(
-                        ['assessment_id' => $a->id, 'criteria_id' => $auto->id],
-                        ['raw_score' => $a->employee->tenureAt($period->end_date)],
-                    );
-                    $a->setRelation('details', $a->details->where('criteria_id', '!=', $auto->id)->push($detail));
+                    $a->setRelation('details', $a->details->where('criteria_id', '!=', $auto->id)->push($fresh[$a->id]));
                 }
             }
 
@@ -87,7 +101,6 @@ class RankingService
             $results = $this->saw->calculate($input, $matrix);
 
             // 3. Simpan normalisasi per detail (jejak perhitungan).
-            $now = now();
             $normalizedRows = [];
             foreach ($results as $employeeId => $r) {
                 foreach ($r['normalized'] as $code => $value) {
@@ -106,25 +119,37 @@ class RankingService
                 NormalizedScore::upsert($chunk, ['assessment_detail_id'], ['normalized_value', 'weighted_value', 'updated_at']);
             }
 
-            // 4. Simpan ranking. Keputusan direktur yang sudah final tidak diubah.
+            // 4. Simpan ranking (massal). Keputusan direktur yang sudah final tidak diubah.
             $existing = RankingResult::where('period_id', $period->id)->get()->keyBy('employee_id');
+            $rankingRows = [];
             foreach ($results as $employeeId => $r) {
-                $row = $existing[$employeeId] ?? new RankingResult(['employee_id' => $employeeId, 'period_id' => $period->id]);
+                $old = $existing[$employeeId] ?? null;
                 $recommended = $r['rank'] <= PromotionData::RECOMMENDED_COUNT;
 
-                $row->fill([
+                if ($old?->isDecided()) {
+                    $status = $old->approval_status;
+                } else {
+                    // Termasuk 'revision': setelah HRD meninjau & menghitung ulang, kandidat kembali menunggu keputusan.
+                    $status = $recommended ? RankingResult::PENDING : null;
+                }
+                $keepApprover = $old && $old->approval_status === $status;
+
+                $rankingRows[] = [
+                    'employee_id' => $employeeId,
+                    'period_id' => $period->id,
                     'final_score' => $r['score'],
                     'rank' => $r['rank'],
                     'is_recommended' => $recommended,
-                ]);
-                if (! $row->isDecided()) {
-                    // Termasuk 'revision': setelah HRD meninjau & menghitung ulang, kandidat kembali menunggu keputusan.
-                    $row->approval_status = $recommended ? RankingResult::PENDING : null;
-                    if ($row->isDirty('approval_status')) {
-                        $row->forceFill(['approved_by' => null, 'approved_at' => null]);
-                    }
-                }
-                $row->save();
+                    'approval_status' => $status,
+                    'approved_by' => $keepApprover ? $old->approved_by : null,
+                    'approved_at' => $keepApprover ? $old->getRawOriginal('approved_at') : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+            foreach (array_chunk($rankingRows, 500) as $chunk) {
+                RankingResult::upsert($chunk, ['period_id', 'employee_id'],
+                    ['final_score', 'rank', 'is_recommended', 'approval_status', 'approved_by', 'approved_at', 'updated_at']);
             }
 
             // Yang tidak lagi ikut perhitungan dihapus dari ranking, kecuali sudah diputuskan direktur.

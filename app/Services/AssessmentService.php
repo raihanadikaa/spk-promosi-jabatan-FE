@@ -25,15 +25,15 @@ class AssessmentService
             $period = AssessmentPeriod::whereKey($period->id)->lockForUpdate()->firstOrFail();
 
             if (! $period->isOngoing()) {
-                throw ValidationException::withMessages(['period' => 'Periode penilaian tidak sedang berlangsung, nilai tidak bisa diubah.']);
+                throw ValidationException::withMessages(['period' => __('Periode penilaian tidak sedang berlangsung, nilai tidak bisa diubah.')]);
             }
             if ($employee->supervisor_id !== $assessor->id || ! $employee->is_active) {
-                throw ValidationException::withMessages(['employee' => 'Anda hanya bisa menilai bawahan langsung yang aktif.']);
+                throw ValidationException::withMessages(['employee' => __('Anda hanya bisa menilai bawahan langsung yang aktif.')]);
             }
 
             $assessment = Assessment::firstOrNew(['period_id' => $period->id, 'employee_id' => $employee->id]);
             if ($assessment->isSubmitted()) {
-                throw ValidationException::withMessages(['employee' => 'Penilaian ini sudah dikirim dan terkunci. Hubungi HRD jika perlu koreksi.']);
+                throw ValidationException::withMessages(['employee' => __('Penilaian ini sudah dikirim dan terkunci. Hubungi HRD jika perlu koreksi.')]);
             }
 
             $assessment->fill([
@@ -66,10 +66,10 @@ class AssessmentService
     public function reopen(Assessment $assessment): void
     {
         if (! $assessment->period->isOngoing()) {
-            throw ValidationException::withMessages(['assessment' => 'Penilaian di periode yang sudah ditutup tidak bisa dibuka kembali.']);
+            throw ValidationException::withMessages(['assessment' => __('Penilaian di periode yang sudah ditutup tidak bisa dibuka kembali.')]);
         }
         if (! $assessment->isSubmitted()) {
-            throw ValidationException::withMessages(['assessment' => 'Penilaian ini belum dikirim.']);
+            throw ValidationException::withMessages(['assessment' => __('Penilaian ini belum dikirim.')]);
         }
 
         $assessment->update(['status' => Assessment::DRAFT, 'submitted_at' => null]);

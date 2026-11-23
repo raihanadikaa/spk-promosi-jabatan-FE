@@ -26,7 +26,7 @@
                 </div>
                 <div class="sm:text-right">
                     <p class="text-sm text-ink-muted">Peringkat</p>
-                    <p class="num mt-1 text-xl font-bold">{{ $result['rank'] }} <span class="text-md font-medium text-ink-muted">dari {{ $total }}</span></p>
+                    <p class="num mt-1 text-xl font-bold"><span data-countup>{{ $result['rank'] }}</span> <span class="text-md font-medium text-ink-muted">dari {{ $total }}</span></p>
                 </div>
             </div>
             <x-score-bar :parts="$result['contributions']" height="h-3" class="mt-6" />
@@ -48,7 +48,7 @@
         @endif
 
         <x-panel class="mt-6" title="Rincian per kriteria" description="Nilai 1,0000 berarti Anda yang terbaik di kriteria itu pada periode ini." flush>
-            <ul class="divide-y divide-line">
+            <ul class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                 @foreach ($criteria as $c)
                     @php $r = $result['normalized'][$c['code']] ?? 0; @endphp
                     <li class="grid gap-2 px-5 py-4 sm:grid-cols-[14rem_minmax(0,1fr)_6rem] sm:items-center sm:gap-6">
@@ -59,7 +59,7 @@
                             </p>
                         </div>
                         <div class="h-2 overflow-hidden rounded-full bg-line" aria-hidden="true">
-                            <div class="h-full rounded-full {{ ['C1' => 'bg-c1', 'C2' => 'bg-c2', 'C3' => 'bg-c3', 'C4' => 'bg-c4', 'C5' => 'bg-c5'][$c['code']] ?? 'bg-ink-muted' }}" style="width: {{ $r * 100 }}%"></div>
+                            <div class="tr-bar h-full rounded-full {{ ['C1' => 'bg-c1', 'C2' => 'bg-c2', 'C3' => 'bg-c3', 'C4' => 'bg-c4', 'C5' => 'bg-c5'][$c['code']] ?? 'bg-ink-muted' }}" style="width: {{ $r * 100 }}%"></div>
                         </div>
                         <p class="num font-semibold sm:text-right">{{ Format::score($r) }}</p>
                     </li>

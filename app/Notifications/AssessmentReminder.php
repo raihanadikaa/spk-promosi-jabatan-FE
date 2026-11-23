@@ -21,8 +21,15 @@ class AssessmentReminder extends Notification
         $list = implode(', ', array_slice($this->names, 0, 5)) . ($count > 5 ? ', dan ' . ($count - 5) . ' lainnya' : '');
 
         return [
+            // Teks Indonesia tetap disimpan (cadangan); tampilan memakai kunci + data supaya mengikuti bahasa pembaca.
             'title' => 'Pengingat penilaian',
             'body' => "{$count} penilaian periode {$this->periodName} belum dikirim (batas {$this->deadline}): {$list}.",
+            'i18n' => [
+                'title' => 'Pengingat penilaian',
+                'body' => ':count penilaian periode :period belum dikirim (batas :deadline): :list.',
+                'params' => ['count' => $count, 'period' => $this->periodName, 'deadline' => $this->deadline,
+                    'list' => implode(', ', array_slice($this->names, 0, 5)), 'more' => max(0, $count - 5)],
+            ],
             'url' => route('manager.assessments', [], false),
         ];
     }

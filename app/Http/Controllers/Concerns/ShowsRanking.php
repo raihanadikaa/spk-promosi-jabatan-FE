@@ -75,11 +75,16 @@ trait ShowsRanking
     protected function reportView(string $backRoute): View
     {
         $period = PromotionData::currentPeriod() ?? abort(404);
+        // Cakupan cetak: semua peserta (bawaan) atau hanya kandidat yang direkomendasikan —
+        // dengan ribuan karyawan, laporan "semua" bisa ratusan halaman.
+        $scope = request()->query('cakupan') === 'rekomendasi' ? 'rekomendasi' : 'semua';
 
         return view('shared.report', [
             'period' => $period,
             'criteria' => PromotionData::criteria($period['id']),
-            'rows' => PromotionData::ranking($period),
+            'rows' => PromotionData::ranking($period, $scope === 'rekomendasi' ? ['status' => 'recommended'] : []),
+            'total' => PromotionData::rankingCount($period),
+            'scope' => $scope,
             'back' => route($backRoute),
         ]);
     }

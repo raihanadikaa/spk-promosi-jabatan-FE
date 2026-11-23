@@ -14,7 +14,7 @@
             @if ($open)
                 <form method="POST" action="{{ route('hrd.saw.run') }}">
                     @csrf
-                    <x-btn type="submit" icon="refresh">Hitung ulang ranking</x-btn>
+                    <x-btn type="submit" icon="refresh" data-busy-label="{{ __('Menghitung…') }}">Hitung ulang ranking</x-btn>
                 </form>
             @endif
         </x-slot:actions>
@@ -33,15 +33,16 @@
         </div>
     @endif
 
-    {{-- Kriteria cost dengan nilai terkecil 0: rumus r = min/x membuat semua nilai di atas 0 mendapat r = 0. --}}
-    @php $zeroCost = $ranked > 0 ? collect($criteria)->filter(fn ($c) => $c['type'] === 'cost' && isset($bounds[$c['code']]) && (float) $bounds[$c['code']] === 0.0) : collect(); @endphp
+    {{-- Kriteria cost dengan nilai terkecil 0: kolom digeser +1 supaya r = min/x tidak menjadi 0 untuk semua nilai di atas 0. --}}
+    @php $zeroCost = $ranked > 0 ? collect($criteria)->filter(fn ($c) => $c['type'] === 'cost' && isset($bounds[$c['code']]) && (float) $bounds[$c['code']] <= 0.0) : collect(); @endphp
     @if ($zeroCost->isNotEmpty())
-        <div class="mb-6 flex gap-3 rounded-panel border border-warn/30 bg-warn-bg px-4 py-3 text-sm text-warn" role="note">
-            <x-icon name="alert" class="mt-0.5 size-4 shrink-0" />
+        <div class="mb-6 flex gap-3 rounded-panel border border-brand/20 bg-brand-soft px-4 py-3 text-sm text-ink" role="note">
+            <x-icon name="info" class="mt-0.5 size-4 shrink-0 text-brand" />
             <p>
                 <span class="font-semibold">{{ $zeroCost->map(fn ($c) => $c['code'] . ' ' . $c['name'])->implode(', ') }}</span>:
-                ada peserta bernilai 0, sehingga dengan rumus cost r = min ÷ x semua peserta yang nilainya di atas 0 mendapat r = 0
-                (nilai 1 dan 30 dianggap sama buruknya). Ini perilaku rumus SAW standar; pertimbangkan skala konversi bila perbedaan itu penting.
+                ada peserta bernilai 0, jadi rumus cost dihitung dengan geseran +1, yaitu r = (min + 1) ÷ (x + 1).
+                Tanpa geseran, r = min ÷ x bernilai 0 untuk semua peserta di atas 0 (nilai 1 dan 30 dianggap sama buruknya).
+                Contoh: 0 → 1,0000; 1 → 0,5000; 3 → 0,2500. Kriteria tanpa nilai 0 tetap memakai rumus standar.
             </p>
         </div>
     @endif
@@ -124,7 +125,7 @@
                 @endif
                 <p class="border-t border-line px-5 py-3 text-sm text-ink-muted">
                     <span x-show="step === 1">Nilai dari form atasan. Masa kerja dihitung dari tanggal bergabung sampai {{ Format::date($period['end']) }}.</span>
-                    <span x-show="step === 2" x-cloak>Benefit: nilai ÷ nilai tertinggi. Cost: nilai terendah ÷ nilai. Hasil selalu 0–1. Tersimpan di tabel normalized_scores.</span>
+                    <span x-show="step === 2" x-cloak>Benefit: nilai ÷ nilai tertinggi. Cost: nilai terendah ÷ nilai (bila nilai terendah 0: (terendah + 1) ÷ (nilai + 1)). Hasil selalu 0–1. Tersimpan di tabel normalized_scores.</span>
                     <span x-show="step === 3" x-cloak>Setiap kolom = nilai ternormalisasi × bobot. Skor V adalah jumlahnya; peringkat diurutkan dari V terbesar.</span>
                 </p>
             </x-panel>

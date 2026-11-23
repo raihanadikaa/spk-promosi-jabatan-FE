@@ -6,7 +6,7 @@
     $total = array_sum($parts);
     $summary = collect($parts)->map(fn ($v, $k) => ($names[$k] ?? $k) . ' ' . number_format($v, 3, ',', '.'))->implode(', ');
 @endphp
-<div {{ $attributes->merge(['class' => "flex w-full gap-px overflow-hidden rounded-full bg-line $height"]) }}
+<div {{ $attributes->merge(['class' => "tr-bar flex w-full gap-px overflow-hidden rounded-full bg-line $height"]) }}
      role="img" aria-label="Skor {{ number_format($total, 3, ',', '.') }}. {{ $summary }}">
     @foreach ($parts as $code => $value)
         <span class="{{ $colors[$code] ?? 'bg-ink-faint' }} h-full" style="width: {{ $value * 100 }}%" title="{{ $names[$code] ?? $code }}: {{ number_format($value, 4, ',', '.') }}"></span>

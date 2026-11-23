@@ -64,7 +64,10 @@
                                     </td>
                                     <td class="num text-right">{{ Format::number($x, $code === 'C1' ? 1 : 0) }} <span class="text-sm text-ink-muted">{{ $c['unit'] === 'skor 0–100' ? '' : $c['unit'] }}</span></td>
                                     <td class="num text-sm text-ink-muted">
-                                        @if ($c['type'] === 'cost')
+                                        @if ($c['type'] === 'cost' && \App\Services\SawCalculator::costOffset((float) $bound) > 0)
+                                            @php $off = \App\Services\SawCalculator::costOffset((float) $bound); @endphp
+                                            <span title="Nilai terendah 0, jadi kolom digeser +{{ Format::number($off, 0) }}">({{ Format::number($bound, 0) }} + {{ Format::number($off, 0) }}) ÷ ({{ Format::number($x, 0) }} + {{ Format::number($off, 0) }})</span>
+                                        @elseif ($c['type'] === 'cost')
                                             {{ Format::number($bound, 0) }} ÷ {{ Format::number($x, 0) }}
                                         @else
                                             {{ Format::number($x, $code === 'C1' ? 1 : 0) }} ÷ {{ Format::number($bound, $code === 'C1' ? 1 : 0) }}

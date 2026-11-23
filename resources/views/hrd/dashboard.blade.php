@@ -13,14 +13,14 @@
         @if ($open)
             <form method="POST" action="{{ route('hrd.saw.run') }}">
                 @csrf
-                <x-btn type="submit" icon="calculator">Hitung ulang ranking</x-btn>
+                <x-btn type="submit" icon="calculator" data-busy-label="{{ __('Menghitung…') }}">Hitung ulang ranking</x-btn>
             </form>
         @endif
     </x-slot:actions>
 
     @include('partials.stale-banner')
 
-    <section class="grid gap-6 rounded-panel border border-[#C7D2FE] bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#1E4B6D] p-5 text-white shadow-md sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.85fr)] lg:items-center"
+    <section class="tr-shine grid gap-6 rounded-panel border border-[#C7D2FE] dark:border-line-strong bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#1E4B6D] p-5 text-white shadow-md sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.85fr)] lg:items-center"
              aria-label="Periode aktif dan progres penilaian">
         <div>
             <x-status :value="$period['status']" />
@@ -42,15 +42,15 @@
                 <strong class="num text-lg font-bold text-white">{{ $submittedPercent }}%</strong>
             </div>
             <div class="h-2.5 overflow-hidden rounded-full bg-white/15" role="img" aria-label="{{ $counts['submitted'] }} dari {{ $counts['total'] }} penilaian terkirim">
-                <span class="block h-full rounded-full bg-ok transition-[width] duration-200" style="width: {{ $submittedPercent }}%"></span>
+                <span class="tr-bar block h-full rounded-full bg-ok transition-[width] duration-200" style="width: {{ $submittedPercent }}%"></span>
             </div>
             <p class="mt-2 text-sm text-[#B8CADB]">{{ $counts['submitted'] }} dari {{ $counts['total'] }} karyawan sudah mengirim penilaian</p>
         </div>
     </section>
 
-    <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Ringkasan penilaian">
-        <article class="flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm">
-            <span class="grid size-11 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true">
+    <section class="tr-stagger mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Ringkasan penilaian">
+        <article class="tr-card flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm">
+            <span class="tr-icon grid size-11 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true">
                 <x-icon name="users" />
             </span>
             <div class="min-w-0">
@@ -60,8 +60,8 @@
             </div>
         </article>
 
-        <article class="flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm">
-            <span class="grid size-11 shrink-0 place-items-center rounded-ctl bg-warn-bg text-warn" aria-hidden="true">
+        <article class="tr-card flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm">
+            <span class="tr-icon grid size-11 shrink-0 place-items-center rounded-ctl bg-warn-bg text-warn" aria-hidden="true">
                 <x-icon name="calculator" />
             </span>
             <div class="min-w-0">
@@ -71,8 +71,8 @@
             </div>
         </article>
 
-        <article class="flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm sm:col-span-2 xl:col-span-1">
-            <span class="grid size-11 shrink-0 place-items-center rounded-ctl bg-brand-soft text-brand" aria-hidden="true">
+        <article class="tr-card flex min-w-0 items-start gap-4 rounded-panel border border-line bg-surface p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+            <span class="tr-icon grid size-11 shrink-0 place-items-center rounded-ctl bg-brand-soft text-brand" aria-hidden="true">
                 <x-icon name="sliders" />
             </span>
             <div class="min-w-0">
@@ -85,9 +85,9 @@
 
     <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,.9fr)]">
         <x-panel title="Aksi cepat" description="Lanjutkan tahapan proses penilaian.">
-            <div class="grid gap-2">
+            <div class="tr-stagger grid gap-2" style="--tr-base: 200ms">
                 <a href="{{ route('hrd.periods') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
-                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true"><x-icon name="calendar" /></span>
+                    <span class="tr-icon grid size-10 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true"><x-icon name="calendar" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold text-ink">Buka / tutup periode</span>
                         <span class="mt-0.5 block text-sm text-ink-muted">Kelola siklus penilaian</span>
@@ -95,7 +95,7 @@
                     <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
                 </a>
                 <a href="{{ route('hrd.criteria') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
-                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-brand-soft text-brand" aria-hidden="true"><x-icon name="sliders" /></span>
+                    <span class="tr-icon grid size-10 shrink-0 place-items-center rounded-ctl bg-brand-soft text-brand" aria-hidden="true"><x-icon name="sliders" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold text-ink">Kelola kriteria</span>
                         <span class="mt-0.5 block text-sm text-ink-muted">Periksa kriteria dan bobot</span>
@@ -103,7 +103,7 @@
                     <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
                 </a>
                 <a href="{{ route('hrd.saw') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
-                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-warn-bg text-warn" aria-hidden="true"><x-icon name="calculator" /></span>
+                    <span class="tr-icon grid size-10 shrink-0 place-items-center rounded-ctl bg-warn-bg text-warn" aria-hidden="true"><x-icon name="calculator" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold text-ink">Proses perhitungan SAW</span>
                         <span class="mt-0.5 block text-sm text-ink-muted">Tinjau matriks dan hasil kalkulasi</span>
@@ -111,7 +111,7 @@
                     <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
                 </a>
                 <a href="{{ route('hrd.sensitivity') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
-                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-ok-bg text-ok" aria-hidden="true"><x-icon name="scale" /></span>
+                    <span class="tr-icon grid size-10 shrink-0 place-items-center rounded-ctl bg-ok-bg text-ok" aria-hidden="true"><x-icon name="scale" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold text-ink">Analisis sensitivitas</span>
                         <span class="mt-0.5 block text-sm text-ink-muted">Uji kestabilan ranking terhadap perubahan bobot</span>
@@ -119,7 +119,7 @@
                     <x-icon name="chevron-right" class="text-ink-faint transition-transform group-hover:translate-x-0.5" />
                 </a>
                 <a href="{{ route('hrd.activity') }}" class="group flex items-center gap-3 rounded-ctl border border-line p-3 transition-colors hover:border-line-strong hover:bg-canvas">
-                    <span class="grid size-10 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true"><x-icon name="history" /></span>
+                    <span class="tr-icon grid size-10 shrink-0 place-items-center rounded-ctl bg-info-bg text-info" aria-hidden="true"><x-icon name="history" /></span>
                     <span class="min-w-0 flex-1">
                         <span class="block font-semibold text-ink">Log aktivitas</span>
                         <span class="mt-0.5 block text-sm text-ink-muted">Siapa mengubah apa dan kapan</span>
@@ -137,7 +137,7 @@
             @if ($followUps->isEmpty())
                 <x-empty-state icon="check-circle" title="Semua penilaian sudah terkirim" body="Ranking periode ini siap dihitung." />
             @else
-                <ul class="divide-y divide-line">
+                <ul class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                     @foreach ($followUps as $e)
                         <li class="flex items-start justify-between gap-3 px-5 py-3.5">
                             <div class="min-w-0">
@@ -171,7 +171,7 @@
                 <x-empty-state icon="trophy" title="Ranking belum dihitung"
                                body="Tekan Hitung ulang ranking setelah minimal satu penilaian terkirim." />
             @else
-                <ol class="divide-y divide-line">
+                <ol class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                     @foreach ($top as $row)
                         <li>@include('partials.ranking-row', ['row' => $row, 'href' => route('hrd.ranking.show', $row['id'])])</li>
                     @endforeach
@@ -197,7 +197,7 @@
                             <tr>
                                 <td class="font-semibold">{{ $d['department'] }}</td>
                                 <td>
-                                    <div class="flex h-2 w-full gap-px overflow-hidden rounded-full bg-line" role="img" aria-label="{{ $d['submitted'] }} terkirim, {{ $d['draft'] }} draft, dari {{ $d['total'] }} karyawan">
+                                    <div class="tr-bar flex h-2 w-full gap-px overflow-hidden rounded-full bg-line" role="img" aria-label="{{ $d['submitted'] }} terkirim, {{ $d['draft'] }} draft, dari {{ $d['total'] }} karyawan">
                                         <span class="h-full bg-ok" style="width: {{ $d['submitted'] / max(1, $d['total']) * 100 }}%"></span>
                                         <span class="h-full bg-[#D9A441]" style="width: {{ $d['draft'] / max(1, $d['total']) * 100 }}%"></span>
                                     </div>
@@ -222,7 +222,7 @@
             @if ($approvals['recommended'] === 0)
                 <x-empty-state icon="check-circle" title="Belum ada rekomendasi" body="Rekomendasi muncul setelah ranking dihitung." />
             @else
-                <div class="flex h-3 w-full gap-px overflow-hidden rounded-full bg-line" role="img"
+                <div class="tr-bar flex h-3 w-full gap-px overflow-hidden rounded-full bg-line" role="img"
                      aria-label="{{ $approvals['approved'] }} disetujui, {{ $approvals['rejected'] }} ditolak, {{ $approvals['revision'] }} review ulang, {{ $approvals['pending'] }} menunggu">
                     @foreach (['approved' => 'bg-ok', 'rejected' => 'bg-bad', 'revision' => 'bg-brand', 'pending' => 'bg-[#D9A441]'] as $key => $color)
                         @if ($approvals[$key])
@@ -230,9 +230,9 @@
                         @endif
                     @endforeach
                 </div>
-                <dl class="mt-4 grid grid-cols-2 gap-3">
+                <dl class="tr-stagger mt-4 grid grid-cols-2 gap-3" style="--tr-base: 500ms">
                     @foreach ([['approved', 'Disetujui', 'bg-ok'], ['rejected', 'Ditolak', 'bg-bad'], ['revision', 'Review ulang', 'bg-brand'], ['pending', 'Menunggu', 'bg-[#D9A441]']] as [$key, $label, $color])
-                        <div class="flex items-center gap-2.5 rounded-ctl border border-line px-3 py-2.5">
+                        <div class="tr-card flex items-center gap-2.5 rounded-ctl border border-line px-3 py-2.5">
                             <span class="inline-block size-2.5 shrink-0 rounded-[3px] {{ $color }}" aria-hidden="true"></span>
                             <dt class="min-w-0 flex-1 text-sm text-ink-muted">{{ $label }}</dt>
                             <dd class="num font-bold">{{ $approvals[$key] }}</dd>

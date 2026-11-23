@@ -296,6 +296,28 @@ class BackendFeaturesTest extends TestCase
         $this->actingAs($this->as('hrd@talentrank.test'))->get('/hrd/ranking')->assertOk()->assertSee('Laporan PDF');
     }
 
+    public function test_laporan_bisa_dicetak_hanya_kandidat_direkomendasikan(): void
+    {
+        $hrd = $this->as('hrd@talentrank.test');
+        $this->actingAs($hrd)->post('/hrd/proses-saw')->assertSessionHasNoErrors();
+        $period = $this->period();
+        $total = RankingResult::where('period_id', $period->id)->count();
+        $recommended = RankingResult::where('period_id', $period->id)->whereNotNull('approval_status')->with('employee')->get();
+        $last = RankingResult::where('period_id', $period->id)->whereNull('approval_status')->orderByDesc('rank')->with('employee')->firstOrFail();
+
+        // Bawaan tetap semua peserta.
+        $this->actingAs($hrd)->get('/hrd/ranking/laporan')->assertOk()->assertSee($last->employee->name)->assertSee('Hanya direkomendasikan');
+
+        $page = $this->actingAs($hrd)->get('/hrd/ranking/laporan?cakupan=rekomendasi')->assertOk()
+            ->assertSee("direkomendasikan dari {$total}")->assertDontSee($last->employee->name);
+        foreach ($recommended as $r) {
+            $page->assertSee($r->employee->name);
+        }
+
+        // Nilai cakupan tak dikenal → kembali ke semua peserta.
+        $this->actingAs($this->as('direktur@talentrank.test'))->get('/direktur/ranking/laporan?cakupan=xyz')->assertOk()->assertSee($last->employee->name);
+    }
+
     /* ---------------- Riwayat karyawan ---------------- */
 
     public function test_karyawan_melihat_riwayat_periode_yang_sudah_ditutup(): void

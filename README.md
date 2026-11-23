@@ -61,7 +61,7 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 - Skor akhir: `V = Σ wⱼ · rᵢⱼ`
 - Seluruh jejak disimpan: `assessment_details` (nilai mentah) → `normalized_scores` (r dan w·r) → `ranking_results` (V, peringkat, keputusan).
 - Bobot **dan jenis** (benefit/cost) disimpan per periode di `criteria_weights`, jadi mengubah jenis di periode baru tidak mengubah periode lama.
-- Catatan: pada kriteria cost, bila ada peserta bernilai 0 maka semua nilai di atas 0 mendapat r = 0 (sifat rumus `min/x`). Halaman Proses SAW menampilkan peringatan saat ini terjadi.
+- Catatan: pada kriteria cost, bila nilai terkecil 0 (mis. 0 hari absen) seluruh kolom digeser +1 sehingga r = `(min+1)/(x+1)`. Tanpa geseran, `min/x` membuat semua nilai di atas 0 mendapat r = 0 (1 hari dan 30 hari dianggap sama buruknya). Kriteria tanpa nilai 0 tetap memakai `min/x` standar. Halaman Proses SAW menampilkan keterangan saat geseran dipakai.
 
 ## Fitur pendukung keputusan
 
@@ -72,6 +72,17 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 | Grafik | HRD, direktur, karyawan | Sebaran skor akhir, ringkasan keputusan direktur, tren skor antar periode. |
 
 Setelah `git pull` yang membawa migrasi baru, jalankan `php artisan migrate`.
+
+## Profil, pengaturan, bahasa (`/akun`, semua role)
+
+- **Profil**: ubah nama & nomor HP (email diatur admin). Foto profil: unggah/seret file, potong bulat (perbesar, putar, balik), 8 filter + kecerahan/kontras, hapus foto, atau pilih avatar siap pakai / inisial nama (pratinjau dulu, tersimpan setelah tombol **Simpan**). Server membaca ulang foto dengan GD (maks. 4096×4096, 5 MB) dan menyimpannya sebagai WebP 512×512 di disk privat; foto disajikan lewat `/avatar/{user}/{versi}` khusus pengguna yang login.
+- **Keamanan**: ganti password, daftar sesi login aktif (browser, OS, IP), keluarkan satu sesi atau semua perangkat lain (wajib password).
+- **Tampilan**: tema terang / gelap / ikuti sistem, ukuran teks kecil / sedang / besar, bahasa Indonesia / English. Semua **tersimpan di akun** (`users.theme`, `text_size`, `locale`) sehingga sama di setiap perangkat & setiap login; diterapkan sebelum halaman tergambar (tanpa kedip).
+- **Bahasa**: teks dibungkus `__()`; kamus Inggris di `lang/en.json` (nama peran: kunci `role:*` di `lang/id.json` & `lang/en.json`). Komponen judul halaman, panel, keadaan kosong, status, menu, dan tombol menerjemahkan otomatis. Pesan server & notifikasi mengikuti bahasa pembaca. Tes `LocalePreferenceTest` gagal bila ada teks `__()` tanpa padanan Inggris.
+- **Hapus akun**: hanya **admin** (halaman Pengguna & role, wajib password admin). Admin tidak bisa menghapus akunnya sendiri; admin/HRD/direktur aktif terakhir tidak bisa dihapus. Data penilaian & keputusan tetap tersimpan.
+- **Notifikasi**: lonceng & menu akun di bar atas; riwayat lengkap di `/notifikasi`.
+- **Intro logo**: halaman login memutar animasi logo (bulatan naik tangga, lalu logo mengecil tepat menimpa logo login) setiap dibuka/dimuat ulang, kecuali sesudah login gagal, saat ganti bahasa, atau bila "kurangi gerakan" aktif. Keluar: bulatan turun tangga.
+- Setelah `git pull`: `php artisan migrate` lalu `npm install && npm run build`.
 
 ## Struktur kode
 

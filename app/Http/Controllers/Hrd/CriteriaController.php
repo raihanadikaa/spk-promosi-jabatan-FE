@@ -44,7 +44,7 @@ class CriteriaController extends Controller
 
         Activity::log('kriteria.tambah', "Menambahkan kriteria {$criterion->code} {$criterion->criteria_name} ({$criterion->attribute_type}).", $criterion);
 
-        return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} ({$criterion->code}) ditambahkan dengan bobot 0%. Atur ulang bobot sampai total 100%.");
+        return to_route('hrd.criteria')->with('success', __('Kriteria :criteria_name (:code) ditambahkan dengan bobot 0%. Atur ulang bobot sampai total 100%.', ['criteria_name' => $criterion->criteria_name, 'code' => $criterion->code]));
     }
 
     public function update(Request $request, Criterion $criterion): RedirectResponse
@@ -68,7 +68,7 @@ class CriteriaController extends Controller
             Activity::log('kriteria.ubah', "Mengubah kriteria {$criterion->code}: " . implode(', ', array_keys($changes)) . '.', $criterion, properties: $changes);
         }
 
-        return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} diperbarui.");
+        return to_route('hrd.criteria')->with('success', __('Kriteria :criteria_name diperbarui.', ['criteria_name' => $criterion->criteria_name]));
     }
 
     public function destroy(Criterion $criterion): RedirectResponse
@@ -76,25 +76,25 @@ class CriteriaController extends Controller
         $this->assertNoOngoingPeriod('menghapus kriteria');
 
         if ($criterion->isAuto()) {
-            throw ValidationException::withMessages(['criteria' => 'Kriteria yang dihitung otomatis (masa kerja) tidak bisa dihapus.']);
+            throw ValidationException::withMessages(['criteria' => __('Kriteria yang dihitung otomatis (masa kerja) tidak bisa dihapus.')]);
         }
         if (AssessmentDetail::where('criteria_id', $criterion->id)->exists()) {
-            throw ValidationException::withMessages(['criteria' => "Kriteria {$criterion->criteria_name} sudah dipakai di penilaian, jadi tidak bisa dihapus agar riwayat tetap utuh."]);
+            throw ValidationException::withMessages(['criteria' => __('Kriteria :criteria_name sudah dipakai di penilaian, jadi tidak bisa dihapus agar riwayat tetap utuh.', ['criteria_name' => $criterion->criteria_name])]);
         }
         if (Criterion::count() <= 2) {
-            throw ValidationException::withMessages(['criteria' => 'Minimal harus ada dua kriteria.']);
+            throw ValidationException::withMessages(['criteria' => __('Minimal harus ada dua kriteria.')]);
         }
 
         $criterion->delete(); // bobotnya ikut terhapus (cascade)
         Activity::log('kriteria.hapus', "Menghapus kriteria {$criterion->code} {$criterion->criteria_name}.", properties: ['kode' => $criterion->code]);
 
-        return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} dihapus. Atur ulang bobot sampai total 100%.");
+        return to_route('hrd.criteria')->with('success', __('Kriteria :criteria_name dihapus. Atur ulang bobot sampai total 100%.', ['criteria_name' => $criterion->criteria_name]));
     }
 
     private function assertNoOngoingPeriod(string $action): void
     {
         if (AssessmentPeriod::ongoing()->exists()) {
-            throw ValidationException::withMessages(['criteria' => "Tidak bisa {$action} saat ada periode yang berlangsung. Lakukan setelah periode ditutup, sebelum periode berikutnya dimulai."]);
+            throw ValidationException::withMessages(['criteria' => __('Tidak bisa :action saat ada periode yang berlangsung. Lakukan setelah periode ditutup, sebelum periode berikutnya dimulai.', ['action' => $action])]);
         }
     }
 

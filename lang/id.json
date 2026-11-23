@@ -1,0 +1,7 @@
+{
+    "role:admin": "Admin",
+    "role:hrd": "HRD",
+    "role:manager": "Atasan",
+    "role:direktur": "Direktur",
+    "role:karyawan": "Karyawan"
+}

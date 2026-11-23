@@ -55,7 +55,7 @@ class AdminController extends Controller
         Activity::log('akun.buat', "Membuat akun {$user->name} ({$user->email}) dengan role {$user->roleName()}.", $user);
 
         return to_route('admin.users')
-            ->with('success', "Akun {$user->name} dibuat.")
+            ->with('success', __('Akun :name dibuat.', ['name' => $user->name]))
             ->with('temporary_password', ['name' => $user->name, 'email' => $user->email, 'password' => $temporary]);
     }
 
@@ -64,7 +64,7 @@ class AdminController extends Controller
         $data = $request->validated();
 
         if ($user->is($request->user()) && (int) $data['role_id'] !== $user->role_id) {
-            throw ValidationException::withMessages(['role_id' => 'Anda tidak bisa mengubah role akun sendiri.']);
+            throw ValidationException::withMessages(['role_id' => __('Anda tidak bisa mengubah role akun sendiri.')]);
         }
 
         $user->forceFill($data);
@@ -74,13 +74,13 @@ class AdminController extends Controller
             Activity::log('akun.ubah', "Mengubah akun {$user->name}: " . implode(', ', $changed) . '.', $user);
         }
 
-        return to_route('admin.users')->with('success', "Akun {$user->name} diperbarui." . $this->orphanWarning($user));
+        return to_route('admin.users')->with('success', __('Akun :name diperbarui.', ['name' => $user->name]) . $this->orphanWarning($user));
     }
 
     public function toggle(Request $request, User $user): RedirectResponse
     {
         if ($user->is($request->user())) {
-            throw ValidationException::withMessages(['user' => 'Anda tidak bisa menonaktifkan akun sendiri.']);
+            throw ValidationException::withMessages(['user' => __('Anda tidak bisa menonaktifkan akun sendiri.')]);
         }
 
         DB::transaction(function () use ($user) {
@@ -95,13 +95,13 @@ class AdminController extends Controller
 
         Activity::log('akun.status', ($user->is_active ? 'Mengaktifkan' : 'Menonaktifkan') . " akun {$user->name}.", $user);
 
-        return to_route('admin.users')->with('success', ($user->is_active ? "{$user->name} diaktifkan." : "{$user->name} dinonaktifkan.") . $this->orphanWarning($user));
+        return to_route('admin.users')->with('success', ($user->is_active ? __(':name diaktifkan.', ['name' => $user->name]) : __(':name dinonaktifkan.', ['name' => $user->name])) . $this->orphanWarning($user));
     }
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
         if ($user->is($request->user())) {
-            throw ValidationException::withMessages(['user' => 'Ganti password akun sendiri lewat menu Ganti password.']);
+            throw ValidationException::withMessages(['user' => __('Ganti password akun sendiri lewat menu Ganti password.')]);
         }
 
         $temporary = $this->temporaryPassword();
@@ -110,8 +110,59 @@ class AdminController extends Controller
         Activity::log('akun.reset', "Mereset password akun {$user->name}.", $user);
 
         return to_route('admin.users')
-            ->with('success', "Password {$user->name} direset.")
+            ->with('success', __('Password :name direset.', ['name' => $user->name]))
             ->with('temporary_password', ['name' => $user->name, 'email' => $user->email, 'password' => $temporary]);
+    }
+
+    /**
+     * Hapus akun (hanya admin). Wajib password admin. Admin tidak bisa menghapus akunnya sendiri, dan sistem harus
+     * tetap punya admin, HRD, dan direktur aktif. Penilaian/keputusan tetap tersimpan (kolom pelaku menjadi kosong,
+     * nama tetap tercatat di log aktivitas).
+     */
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        $request->validateWithBag('deleteUser', ['password' => ['required', 'current_password']],
+            ['password.current_password' => __('Password salah.')], ['password' => 'password']);
+
+        if ($user->is($request->user())) {
+            throw ValidationException::withMessages(['password' => __('Anda tidak bisa menghapus akun sendiri.')])->errorBag('deleteUser');
+        }
+        if ($reason = self::deleteBlocker($user)) {
+            throw ValidationException::withMessages(['password' => $reason])->errorBag('deleteUser');
+        }
+
+        $orphans = \App\Models\Employee::active()->where('supervisor_id', $user->id)->count();
+        $name = $user->name;
+        $email = $user->email;
+        $userId = $user->id;
+
+        DB::transaction(function () use ($user) {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->notifications()->delete();
+            $user->delete();
+        });
+        // Dicatat setelah penghapusan benar-benar berhasil (log tidak boleh mencatat kejadian yang batal).
+        Activity::log('akun.hapus', "Menghapus akun {$name} ({$email}).", null, null, ['user_id' => $userId]);
+        if ($user->avatar_path) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($user->avatar_path);
+        }
+
+        $warning = $orphans ? ' ' . __('Perhatian: :count karyawan aktif kini tanpa atasan penilai. Atur atasannya di halaman Karyawan.', ['count' => $orphans]) : '';
+
+        return to_route('admin.users')->with('success', __('Akun :name dihapus.', ['name' => $name]) . $warning);
+    }
+
+    /** Alasan akun tidak boleh dihapus (null = boleh): sistem harus tetap punya admin, HRD, dan direktur aktif. */
+    public static function deleteBlocker(User $user): ?string
+    {
+        $role = $user->roleName();
+        if (! in_array($role, ['admin', 'hrd', 'direktur'], true) || ! $user->is_active) {
+            return null;
+        }
+        $others = User::where('id', '!=', $user->id)->where('is_active', true)
+            ->whereHas('role', fn ($q) => $q->where('role_name', $role))->exists();
+
+        return $others ? null : __(':name satu-satunya :role yang aktif. Tambahkan :role lain sebelum menghapus akun ini.', ['name' => $user->name, 'role' => __('role:' . $role)]);
     }
 
     /** Bawahan aktif yang kehilangan penilai karena akun ini nonaktif atau bukan atasan lagi. */
@@ -123,7 +174,7 @@ class AdminController extends Controller
         }
         $count = \App\Models\Employee::active()->where('supervisor_id', $user->id)->count();
 
-        return $count ? " Perhatian: {$count} karyawan aktif masih tercatat sebagai bawahannya dan tidak bisa dinilai sampai HRD mengganti atasan penilainya." : '';
+        return $count ? ' ' . __('Perhatian: :count karyawan aktif masih tercatat sebagai bawahannya dan tidak bisa dinilai sampai HRD mengganti atasan penilainya.', ['count' => $count]) : '';
     }
 
     private function temporaryPassword(): string
