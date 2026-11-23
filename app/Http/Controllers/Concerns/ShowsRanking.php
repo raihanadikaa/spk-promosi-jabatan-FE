@@ -67,6 +67,7 @@ trait ShowsRanking
             'bounds' => PromotionData::bounds($period),
             'back' => $back,
             'canDecide' => $canDecide && $row['approval_status'] === 'pending' && PromotionData::isOpen($period),
+            'history' => PromotionData::scoreHistory($employeeId),
         ]);
     }
 

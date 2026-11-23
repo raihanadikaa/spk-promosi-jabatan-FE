@@ -31,6 +31,7 @@ class DirekturDashboardController extends Controller
         return view('direktur.dashboard', [
             'period' => $period,
             'ranking' => PromotionData::ranking($period, ['status' => 'recommended']),
+            'distribution' => PromotionData::scoreDistribution($period),
             'stale' => PromotionData::staleReasons($period),
         ]);
     }

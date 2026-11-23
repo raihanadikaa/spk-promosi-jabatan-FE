@@ -7,6 +7,7 @@ use App\Models\AssessmentDetail;
 use App\Models\AssessmentPeriod;
 use App\Models\CriteriaWeight;
 use App\Models\Criterion;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,8 @@ class CriteriaController extends Controller
             return $criterion;
         });
 
+        Activity::log('kriteria.tambah', "Menambahkan kriteria {$criterion->code} {$criterion->criteria_name} ({$criterion->attribute_type}).", $criterion);
+
         return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} ({$criterion->code}) ditambahkan dengan bobot 0%. Atur ulang bobot sampai total 100%.");
     }
 
@@ -52,7 +55,12 @@ class CriteriaController extends Controller
             // Di tengah periode (atau kriteria otomatis): hanya nama & keterangan.
             $data = ['criteria_name' => $data['criteria_name'], 'description' => $data['description']];
         }
-        $criterion->update($data);
+        $criterion->fill($data);
+        $changes = collect($criterion->getDirty())->map(fn ($new, $field) => ['dari' => $criterion->getOriginal($field), 'ke' => $new])->all();
+        $criterion->save();
+        if ($changes) {
+            Activity::log('kriteria.ubah', "Mengubah kriteria {$criterion->code}: " . implode(', ', array_keys($changes)) . '.', $criterion, properties: $changes);
+        }
 
         return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} diperbarui.");
     }
@@ -72,6 +80,7 @@ class CriteriaController extends Controller
         }
 
         $criterion->delete(); // bobotnya ikut terhapus (cascade)
+        Activity::log('kriteria.hapus', "Menghapus kriteria {$criterion->code} {$criterion->criteria_name}.", properties: ['kode' => $criterion->code]);
 
         return to_route('hrd.criteria')->with('success', "Kriteria {$criterion->criteria_name} dihapus. Atur ulang bobot sampai total 100%.");
     }

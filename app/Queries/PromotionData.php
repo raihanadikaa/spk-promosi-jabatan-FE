@@ -480,6 +480,71 @@ class PromotionData
     }
 
     /**
+     * Sebaran skor akhir dalam 10 kelompok (0,0–0,1 … 0,9–1,0) untuk grafik histogram.
+     * Hanya kolom skor yang dibaca, per 2.000 baris, supaya tetap ringan walau karyawannya ribuan.
+     *
+     * @return array{bins: list<array{from: float, to: float, total: int, recommended: int}>, cutoff: ?float, max: int}
+     */
+    public static function scoreDistribution(?array $period): array
+    {
+        $bins = [];
+        for ($i = 0; $i < 10; $i++) {
+            $bins[$i] = ['from' => $i / 10, 'to' => ($i + 1) / 10, 'total' => 0, 'recommended' => 0];
+        }
+        if (! $period) {
+            return ['bins' => $bins, 'cutoff' => null, 'max' => 0];
+        }
+
+        RankingResult::where('period_id', $period['id'])->select('id', 'final_score', 'approval_status')->toBase()
+            ->lazyById(2000)->each(function ($r) use (&$bins) {
+                $i = min(9, max(0, (int) floor((float) $r->final_score * 10)));
+                $bins[$i]['total']++;
+                if ($r->approval_status !== null) {
+                    $bins[$i]['recommended']++;
+                }
+            });
+
+        return [
+            'bins' => $bins,
+            // Skor terendah yang masih direkomendasikan = garis batas di grafik.
+            'cutoff' => ($cut = RankingResult::where('period_id', $period['id'])->whereNotNull('approval_status')->min('final_score')) !== null ? (float) $cut : null,
+            'max' => max(array_column($bins, 'total')),
+        ];
+    }
+
+    /**
+     * Riwayat skor satu karyawan di semua periode yang sudah diranking (lama → baru), untuk grafik tren.
+     *
+     * @return list<array{period_id:int, period:string, status:string, score:float, rank:int, total:int, approval_status:?string}>
+     */
+    public static function scoreHistory(int $employeeId): array
+    {
+        $results = RankingResult::query()
+            ->join('assessment_periods', 'assessment_periods.id', '=', 'ranking_results.period_id')
+            ->where('ranking_results.employee_id', $employeeId)
+            ->where('assessment_periods.status', '!=', AssessmentPeriod::DRAFT)
+            ->orderBy('assessment_periods.start_date')
+            ->get(['ranking_results.period_id', 'assessment_periods.period_name', 'assessment_periods.status',
+                'ranking_results.final_score', 'ranking_results.rank', 'ranking_results.approval_status']);
+        if ($results->isEmpty()) {
+            return [];
+        }
+
+        $totals = RankingResult::whereIn('period_id', $results->pluck('period_id'))
+            ->selectRaw('period_id, count(*) as n')->groupBy('period_id')->pluck('n', 'period_id');
+
+        return $results->map(fn ($r) => [
+            'period_id' => (int) $r->period_id,
+            'period' => $r->period_name,
+            'status' => $r->status,
+            'score' => (float) $r->final_score,
+            'rank' => (int) $r->rank,
+            'total' => (int) ($totals[$r->period_id] ?? 0),
+            'approval_status' => $r->approval_status,
+        ])->values()->all();
+    }
+
+    /**
      * Acuan normalisasi tiap kriteria (max untuk benefit, min untuk cost) dari semua peserta ranking,
      * dihitung di database.
      *

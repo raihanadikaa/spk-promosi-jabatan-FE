@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\AssessmentReminder;
 use App\Queries\PromotionData;
 use App\Support\Format;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -98,6 +99,13 @@ class MonitorController extends Controller
                 Format::date($period->assessment_deadline->toDateString()),
                 $unfinished[$manager->id]->pluck('name')->all(),
             ));
+        }
+
+        if ($managers->isNotEmpty()) {
+            Activity::log('penilaian.ingatkan', 'Mengirim pengingat penilaian ke ' . $managers->pluck('name')->implode(', ') . '.', period: $period, properties: [
+                'atasan' => $managers->pluck('name')->all(),
+                'jumlah_bawahan' => $managers->sum(fn ($m) => $unfinished[$m->id]->count()),
+            ]);
         }
 
         return $managers->count();

@@ -73,7 +73,7 @@ class CrawlEverythingTest extends TestCase
 
             PromotionData::flush();
             $response = $this->actingAs($user)->get($path);
-            $this->assertLessThan(500, $response->status(), "{$user->email} GET {$path} → {$response->status()}");
+            $this->assertLessThan(500, $response->getStatusCode(), "{$user->email} GET {$path} → {$response->getStatusCode()}");
 
             if (! str_contains((string) $response->headers->get('Content-Type'), 'text/html')) {
                 continue;
@@ -93,8 +93,8 @@ class CrawlEverythingTest extends TestCase
         foreach ($forms as $form) {
             PromotionData::flush();
             $response = $this->actingAs($user)->from($form['from'])->call($form['method'], $form['action'], $form['data']);
-            $this->assertLessThan(500, $response->status(),
-                "{$user->email} {$form['method']} {$form['action']} (dari {$form['from']}) → {$response->status()}");
+            $this->assertLessThan(500, $response->getStatusCode(),
+                "{$user->email} {$form['method']} {$form['action']} (dari {$form['from']}) → {$response->getStatusCode()}");
         }
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Hrd;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Position;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -32,14 +33,17 @@ class OrganizationController extends Controller
     public function storeDepartment(Request $request): RedirectResponse
     {
         $data = $this->validateDepartment($request);
-        Department::create($data);
+        $department = Department::create($data);
+        Activity::log('karyawan.departemen', "Menambahkan departemen {$department->department_name}.", $department);
 
         return to_route('hrd.organization')->with('success', "Departemen {$data['department_name']} ditambahkan.");
     }
 
     public function updateDepartment(Request $request, Department $department): RedirectResponse
     {
+        $old = $department->department_name;
         $department->update($this->validateDepartment($request, $department));
+        Activity::log('karyawan.departemen', "Mengubah departemen {$old} menjadi {$department->department_name}.", $department);
 
         return to_route('hrd.organization')->with('success', 'Departemen diperbarui.');
     }
@@ -50,6 +54,7 @@ class OrganizationController extends Controller
             return to_route('hrd.organization')->withErrors(['organization' => "Departemen {$department->department_name} masih dipakai karyawan, jadi tidak bisa dihapus."]);
         }
         $department->delete();
+        Activity::log('karyawan.departemen', "Menghapus departemen {$department->department_name}.");
 
         return to_route('hrd.organization')->with('success', "Departemen {$department->department_name} dihapus.");
     }
@@ -59,14 +64,17 @@ class OrganizationController extends Controller
     public function storePosition(Request $request): RedirectResponse
     {
         $data = $this->validatePosition($request);
-        Position::create($data);
+        $position = Position::create($data);
+        Activity::log('karyawan.jabatan', "Menambahkan jabatan {$position->position_name} (level {$position->level}).", $position);
 
         return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', "Jabatan {$data['position_name']} ditambahkan.");
     }
 
     public function updatePosition(Request $request, Position $position): RedirectResponse
     {
+        $old = "{$position->position_name} (level {$position->level})";
         $position->update($this->validatePosition($request, $position));
+        Activity::log('karyawan.jabatan', "Mengubah jabatan {$old} menjadi {$position->position_name} (level {$position->level}).", $position);
 
         return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', 'Jabatan diperbarui.');
     }
@@ -77,6 +85,7 @@ class OrganizationController extends Controller
             return to_route('hrd.organization', ['tab' => 'jabatan'])->withErrors(['organization' => "Jabatan {$position->position_name} masih dipakai karyawan, jadi tidak bisa dihapus."]);
         }
         $position->delete();
+        Activity::log('karyawan.jabatan', "Menghapus jabatan {$position->position_name}.");
 
         return to_route('hrd.organization', ['tab' => 'jabatan'])->with('success', "Jabatan {$position->position_name} dihapus.");
     }
