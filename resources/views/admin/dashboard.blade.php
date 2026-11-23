@@ -20,7 +20,7 @@
             @if ($recent->isEmpty())
                 <x-empty-state icon="clock" title="Belum ada yang login" />
             @else
-                <ul class="divide-y divide-line">
+                <ul class="tr-stagger divide-y divide-line" style="--tr-base: 200ms">
                     @foreach ($recent as $u)
                         <li class="flex items-center justify-between gap-3 px-5 py-3">
                             <div class="min-w-0">
@@ -35,7 +35,7 @@
         </x-panel>
 
         <x-panel title="Kebijakan keamanan yang berlaku">
-            <ul class="space-y-3">
+            <ul class="tr-stagger space-y-3" style="--tr-base: 200ms">
                 @foreach ([
                     ['lock', 'Akun terkunci 5 menit setelah 5 kali gagal login.'],
                     ['clock', 'Sesi berakhir otomatis setelah 30 menit tidak aktif.'],

@@ -27,10 +27,10 @@
                     <line x1="{{ $pad['l'] }}" x2="{{ $w - $pad['r'] }}" y1="{{ $y($t) }}" y2="{{ $y($t) }}" class="stroke-line" stroke-width="1" />
                     <text x="{{ $pad['l'] - 6 }}" y="{{ $y($t) + 4 }}" text-anchor="end" class="fill-ink-faint text-[11px]">{{ Format::number($t, 2) }}</text>
                 @endforeach
-                <polyline points="{{ $points }}" fill="none" class="stroke-brand" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+                <polyline points="{{ $points }}" pathLength="1" fill="none" class="tr-draw stroke-brand" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
                 @foreach ($history as $i => $p)
                     <circle cx="{{ $x($i) }}" cy="{{ $y($p['score']) }}" r="{{ $p['period_id'] === $currentPeriodId ? 5.5 : 4 }}"
-                            class="{{ $p['period_id'] === $currentPeriodId ? 'fill-brand' : 'fill-surface stroke-brand' }}" stroke-width="2">
+                            class="tr-pop {{ $p['period_id'] === $currentPeriodId ? 'fill-brand' : 'fill-surface stroke-brand' }}" style="--i: {{ $i }}" stroke-width="2">
                         <title>{{ $p['period'] }}: skor {{ Format::score($p['score']) }}, peringkat {{ $p['rank'] }} dari {{ $p['total'] }}</title>
                     </circle>
                     <text x="{{ $x($i) }}" y="{{ $h - 8 }}" text-anchor="{{ $i === 0 ? 'start' : ($i === $n - 1 ? 'end' : 'middle') }}" class="fill-ink-muted text-[11px]">{{ \Illuminate\Support\Str::limit($p['period'], $n > 3 ? 10 : 18) }}</text>

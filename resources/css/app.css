@@ -83,6 +83,168 @@
     }
 }
 
+/* ================= Animasi =================
+   Semua gerak hanya aktif bila pengguna TIDAK meminta "kurangi gerakan" di perangkatnya.
+   Hanya memakai opacity/transform/clip-path (diproses GPU, tidak memicu hitung ulang tata letak),
+   sekali jalan saat halaman dibuka, dan konten tetap tampil utuh bila animasi tidak didukung. */
+@media (prefers-reduced-motion: no-preference) {
+    /* Pindah halaman terasa mulus (Chrome/Edge); sidebar tetap diam, hanya konten yang berganti. */
+    @view-transition {
+        navigation: auto;
+    }
+
+    #sidebar {
+        view-transition-name: sidebar;
+    }
+
+    ::view-transition-old(root) {
+        animation: 140ms ease-out both tr-fade-out;
+    }
+
+    ::view-transition-new(root) {
+        animation: 220ms ease-out both tr-fade-in;
+    }
+
+    /* Isi halaman muncul berurutan. Hanya opacity (tanpa transform) supaya modal/laci "fixed" tetap di posisinya. */
+    #konten > * {
+        animation: tr-fade-in 420ms ease-out backwards;
+    }
+
+    #konten > :nth-child(2) { animation-delay: 60ms; }
+    #konten > :nth-child(3) { animation-delay: 120ms; }
+    #konten > :nth-child(4) { animation-delay: 180ms; }
+    #konten > :nth-child(5) { animation-delay: 240ms; }
+    #konten > :nth-child(n + 6) { animation-delay: 300ms; }
+
+    /* Kartu muncul naik satu per satu (dipakai di dashboard). */
+    .tr-stagger > * {
+        animation: tr-rise 560ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+        animation-delay: calc(var(--tr-base, 80ms) + var(--i, 0) * 70ms);
+    }
+
+    .tr-stagger > :nth-child(2) { --i: 1; }
+    .tr-stagger > :nth-child(3) { --i: 2; }
+    .tr-stagger > :nth-child(4) { --i: 3; }
+    .tr-stagger > :nth-child(5) { --i: 4; }
+    .tr-stagger > :nth-child(6) { --i: 5; }
+    .tr-stagger > :nth-child(7) { --i: 6; }
+    .tr-stagger > :nth-child(n + 8) { --i: 7; }
+
+    /* Kartu terangkat sedikit saat disorot; ikon ikut "menyapa". */
+    .tr-card {
+        transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 220ms ease, border-color 220ms ease;
+    }
+
+    .tr-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px -14px rgba(15, 23, 42, 0.28);
+        border-color: theme('colors.line.strong');
+    }
+
+    .tr-icon {
+        transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .tr-card:hover .tr-icon,
+    .group:hover > .tr-icon {
+        transform: scale(1.1) rotate(-6deg);
+    }
+
+    /* Batang progres & komposisi skor terisi dari kiri. */
+    .tr-bar {
+        animation: tr-reveal-x 1000ms cubic-bezier(0.2, 0.7, 0.2, 1) 250ms backwards;
+    }
+
+    /* Batang histogram tumbuh dari bawah, bergiliran. */
+    .tr-col {
+        transform-origin: bottom;
+        animation: tr-grow-y 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+        animation-delay: calc(200ms + var(--i, 0) * 45ms);
+    }
+
+    /* Garis tren tergambar, lalu titik-titiknya muncul. */
+    .tr-draw {
+        stroke-dasharray: 1;
+        animation: tr-draw 1200ms cubic-bezier(0.4, 0, 0.2, 1) 250ms backwards;
+    }
+
+    .tr-pop {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: tr-pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        animation-delay: calc(600ms + var(--i, 0) * 120ms);
+    }
+
+    /* Kilau lembut sekali lewat di panel utama dashboard. */
+    .tr-shine {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tr-shine::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%);
+        transform: translateX(-100%);
+        animation: tr-sweep 1600ms ease-in-out 500ms forwards;
+    }
+
+    /* Titik "sedang berlangsung" memancarkan gelombang pelan (transform + opacity saja, ringan). */
+    .tr-live {
+        position: relative;
+    }
+
+    .tr-live::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: currentColor;
+        opacity: 0.35;
+        animation: tr-ping 2400ms cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+}
+
+@keyframes tr-fade-in {
+    from { opacity: 0; }
+}
+
+@keyframes tr-fade-out {
+    to { opacity: 0; }
+}
+
+@keyframes tr-rise {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+}
+
+@keyframes tr-reveal-x {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes tr-grow-y {
+    from { transform: scaleY(0); }
+}
+
+@keyframes tr-draw {
+    from { stroke-dashoffset: 1; }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes tr-pop {
+    from { opacity: 0; transform: scale(0); }
+}
+
+@keyframes tr-sweep {
+    to { transform: translateX(100%); }
+}
+
+@keyframes tr-ping {
+    70%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         transition-duration: 0.01ms !important;
@@ -94,4 +256,10 @@
 @media print {
     @page { size: A4 portrait; margin: 14mm; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Cetak selalu dalam keadaan akhir: tidak ada elemen yang tertangkap setengah muncul. */
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
 }

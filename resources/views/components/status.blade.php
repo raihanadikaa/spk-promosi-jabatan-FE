@@ -17,4 +17,4 @@
     ];
     [$tone, $label] = $map[$value] ?? ['neutral', $value];
 @endphp
-<x-badge :tone="$tone" {{ $attributes }}>{{ $label }}</x-badge>
+<x-badge :tone="$tone" {{ $attributes }}>@if ($value === 'ongoing')<span class="tr-live inline-block size-1.5 rounded-full bg-current" aria-hidden="true"></span>@endif{{ $label }}</x-badge>

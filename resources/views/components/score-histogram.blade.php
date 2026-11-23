@@ -24,8 +24,8 @@
                         @if ($b['total'])
                             <span class="num mb-1 text-center text-xs font-semibold text-ink-muted">{{ $b['total'] }}</span>
                         @endif
-                        <div class="relative flex w-full flex-col-reverse overflow-hidden rounded-t-[4px] bg-c1/70 transition-colors group-hover:bg-c1"
-                             style="height: {{ $b['total'] ? max(2, $h) : 0 }}%"
+                        <div class="tr-col relative flex w-full flex-col-reverse overflow-hidden rounded-t-[4px] bg-c1/70 transition-colors group-hover:bg-c1"
+                             style="height: {{ $b['total'] ? max(2, $h) : 0 }}%; --i: {{ $loop->index }}"
                              title="Skor {{ Format::number($b['from'], 1) }}–{{ Format::number($b['to'], 1) }}: {{ $b['total'] }} karyawan{{ $b['recommended'] ? ', ' . $b['recommended'] . ' direkomendasikan' : '' }}">
                             @if ($b['recommended'])
                                 <span class="block w-full bg-brand" style="height: {{ $recH }}%"></span>
