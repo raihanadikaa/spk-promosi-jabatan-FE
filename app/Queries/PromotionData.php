@@ -212,7 +212,7 @@ class PromotionData
             ->with([
                 'department:id,department_name',
                 'position:id,position_name,level',
-                'supervisor:id,name',
+                'supervisor:id,name,is_active,role_id',
                 'assessments' => fn ($q) => $q->where('period_id', $periodId)->with('details:id,assessment_id,criteria_id,raw_score'),
             ])
             ->orderBy('name')
@@ -237,8 +237,14 @@ class PromotionData
             'level' => $e->position->level,
             'join_date' => $e->join_date->toDateString(),
             'tenure' => $e->tenureAt($end),
-            'assessor' => $e->supervisor?->name ?? 'Belum ditentukan',
+            'assessor' => match (true) {
+                ! $e->supervisor => 'Belum ditentukan',
+                ! self::isValidSupervisor($e->supervisor) => $e->supervisor->name . ' (tidak aktif sebagai atasan)',
+                default => $e->supervisor->name,
+            },
             'supervisor_id' => $e->supervisor_id,
+            // false = belum ada atasan, atau atasannya nonaktif / bukan role atasan lagi: tidak ada yang bisa menilai.
+            'supervisor_valid' => $e->supervisor !== null && self::isValidSupervisor($e->supervisor),
             'user_id' => $e->user_id,
             'is_active' => $e->is_active,
             'assessment_id' => $a?->id,
@@ -248,6 +254,13 @@ class PromotionData
             'submitted_at' => $a?->submitted_at?->format('Y-m-d H:i'),
             'raw' => $raw,
         ];
+    }
+
+    private static function isValidSupervisor(\App\Models\User $user): bool
+    {
+        $managerRole = self::memo('role.manager', fn () => \App\Models\Role::where('role_name', 'manager')->value('id'));
+
+        return (bool) $user->is_active && (int) $user->role_id === (int) $managerRole;
     }
 
     /** Semua karyawan yang cocok (tanpa paginasi) — untuk daftar kecil seperti tim satu atasan. */

@@ -49,15 +49,15 @@ class MonitorController extends Controller
             'filters' => $filters,
             'departments' => PromotionData::departments(),
             'canRemind' => PromotionData::isOpen($period),
-            'withoutSupervisor' => Employee::active()->whereNull('supervisor_id')->count(),
+            'withoutSupervisor' => Employee::active()->withoutValidSupervisor()->count(),
         ]);
     }
 
     /** Ingatkan atasan dari satu karyawan (semua bawahannya yang belum terkirim ikut disebut). */
     public function remind(Employee $employee): RedirectResponse
     {
-        if (! $employee->supervisor_id) {
-            return back()->withErrors(['monitor' => "{$employee->name} belum punya atasan penilai. Atur dulu di halaman Karyawan."]);
+        if (! $employee->supervisor_id || Employee::whereKey($employee->id)->withoutValidSupervisor()->exists()) {
+            return back()->withErrors(['monitor' => "{$employee->name} belum punya atasan penilai yang aktif. Atur dulu di halaman Karyawan."]);
         }
 
         $sent = $this->sendReminders([$employee->supervisor_id]);

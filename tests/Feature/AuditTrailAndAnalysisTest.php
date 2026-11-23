@@ -174,6 +174,33 @@ class AuditTrailAndAnalysisTest extends TestCase
         $minC4 == 0.0 ? $page->assertSee('ada peserta bernilai 0') : $page->assertDontSee('ada peserta bernilai 0');
     }
 
+    /* ---------------- Atasan penilai yang tidak lagi valid ---------------- */
+
+    public function test_atasan_dinonaktifkan_admin_terdeteksi_di_monitor_hrd(): void
+    {
+        $manager = User::where('email', 'atasan@talentrank.test')->firstOrFail();
+        $subordinates = Employee::active()->where('supervisor_id', $manager->id)->count();
+        $this->assertGreaterThan(0, $subordinates);
+        $hrd = $this->as('hrd@talentrank.test');
+        $before = Employee::active()->withoutValidSupervisor()->count();
+
+        $this->actingAs($this->as('admin@talentrank.test'))->post("/admin/pengguna/{$manager->id}/status")
+            ->assertSessionHas('success', fn ($m) => str_contains($m, "Perhatian: {$subordinates} karyawan aktif"));
+
+        $this->assertSame($before + $subordinates, Employee::active()->withoutValidSupervisor()->count());
+        $this->actingAs($hrd)->get('/hrd/monitor')->assertOk()
+            ->assertSee(($before + $subordinates) . ' karyawan aktif belum punya atasan penilai yang aktif')
+            ->assertSee('(tidak aktif sebagai atasan)');
+
+        $employee = Employee::active()->where('supervisor_id', $manager->id)->firstOrFail();
+        $this->actingAs($hrd)->post("/hrd/monitor/ingatkan/{$employee->id}")->assertSessionHasErrors('monitor');
+
+        // Mengaktifkan kembali tidak memberi peringatan.
+        $this->actingAs($this->as('admin@talentrank.test'))->post("/admin/pengguna/{$manager->id}/status")
+            ->assertSessionHas('success', fn ($m) => ! str_contains($m, 'Perhatian'));
+        $this->assertSame($before, Employee::active()->withoutValidSupervisor()->count());
+    }
+
     /* ---------------- Analisis sensitivitas ---------------- */
 
     public function test_geser_bobot_menjaga_total_100_dan_proporsi_kriteria_lain(): void

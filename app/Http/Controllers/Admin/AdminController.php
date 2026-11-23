@@ -74,7 +74,7 @@ class AdminController extends Controller
             Activity::log('akun.ubah', "Mengubah akun {$user->name}: " . implode(', ', $changed) . '.', $user);
         }
 
-        return to_route('admin.users')->with('success', "Akun {$user->name} diperbarui.");
+        return to_route('admin.users')->with('success', "Akun {$user->name} diperbarui." . $this->orphanWarning($user));
     }
 
     public function toggle(Request $request, User $user): RedirectResponse
@@ -95,7 +95,7 @@ class AdminController extends Controller
 
         Activity::log('akun.status', ($user->is_active ? 'Mengaktifkan' : 'Menonaktifkan') . " akun {$user->name}.", $user);
 
-        return to_route('admin.users')->with('success', $user->is_active ? "{$user->name} diaktifkan." : "{$user->name} dinonaktifkan.");
+        return to_route('admin.users')->with('success', ($user->is_active ? "{$user->name} diaktifkan." : "{$user->name} dinonaktifkan.") . $this->orphanWarning($user));
     }
 
     public function resetPassword(Request $request, User $user): RedirectResponse
@@ -112,6 +112,18 @@ class AdminController extends Controller
         return to_route('admin.users')
             ->with('success', "Password {$user->name} direset.")
             ->with('temporary_password', ['name' => $user->name, 'email' => $user->email, 'password' => $temporary]);
+    }
+
+    /** Bawahan aktif yang kehilangan penilai karena akun ini nonaktif atau bukan atasan lagi. */
+    private function orphanWarning(User $user): string
+    {
+        $user->unsetRelation('role');
+        if ($user->is_active && $user->hasRole('manager')) {
+            return '';
+        }
+        $count = \App\Models\Employee::active()->where('supervisor_id', $user->id)->count();
+
+        return $count ? " Perhatian: {$count} karyawan aktif masih tercatat sebagai bawahannya dan tidak bisa dinilai sampai HRD mengganti atasan penilainya." : '';
     }
 
     private function temporaryPassword(): string
