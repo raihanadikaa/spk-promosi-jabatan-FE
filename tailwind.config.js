@@ -21,14 +21,15 @@ export default {
             fontFamily: {
                 sans: ['Manrope', '"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
             },
+            // rem (bukan px) supaya ikut pilihan ukuran teks pengguna (html[data-text]); pada 16px nilainya sama persis.
             fontSize: {
-                xs: ['12px', '16px'],
-                sm: ['13px', '18px'],
-                base: ['14px', '21px'],
-                md: ['16px', '24px'],
-                lg: ['20px', '28px'],
-                xl: ['26px', '32px'],
-                '2xl': ['34px', '40px'],
+                xs: ['0.75rem', '1rem'],
+                sm: ['0.8125rem', '1.125rem'],
+                base: ['0.875rem', '1.3125rem'],
+                md: ['1rem', '1.5rem'],
+                lg: ['1.25rem', '1.75rem'],
+                xl: ['1.625rem', '2rem'],
+                '2xl': ['2.125rem', '2.5rem'],
             },
             // Warna dibaca dari variabel CSS (resources/css/app.css) supaya mode gelap cukup mengganti variabelnya.
             // Nilai mode terang sama persis dengan warna sebelumnya. Modifier opasitas (bg-c1/70 dst.) tetap jalan.

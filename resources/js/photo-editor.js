@@ -16,6 +16,13 @@ async function loadCropper() {
 }
 
 const MAX_BYTES = 5 * 1024 * 1024;
+const EN = () => (document.documentElement.lang || '').startsWith('en');
+const T = {
+    format: () => (EN() ? 'The photo must be JPG, PNG, or WebP.' : 'Format foto harus JPG, PNG, atau WebP.'),
+    size: (mb) => (EN() ? `The photo is ${mb} MB; the maximum is 5 MB.` : `Ukuran foto ${mb.replace('.', ',')} MB, maksimal 5 MB.`),
+    load: () => (EN() ? 'The photo editor failed to load. Check your connection and try again.' : 'Editor foto gagal dimuat. Periksa koneksi lalu coba lagi.'),
+    process: () => (EN() ? 'The photo could not be processed in this browser. Try another photo or a newer browser.' : 'Foto gagal diproses di browser ini. Coba foto lain atau browser terbaru.'),
+};
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const OUTPUT = 512;
 
@@ -155,11 +162,11 @@ export function photoEditor() {
             this.error = '';
             if (!file) return;
             if (!TYPES.includes(file.type)) {
-                this.error = 'Format foto harus JPG, PNG, atau WebP.';
+                this.error = T.format();
                 return;
             }
             if (file.size > MAX_BYTES) {
-                this.error = `Ukuran foto ${(file.size / 1024 / 1024).toFixed(1).replace('.', ',')} MB, maksimal 5 MB.`;
+                this.error = T.size((file.size / 1024 / 1024).toFixed(1));
                 return;
             }
             this.objectUrl && URL.revokeObjectURL(this.objectUrl);
@@ -179,7 +186,7 @@ export function photoEditor() {
                 Cropper = await loadCropper();
             } catch (e) {
                 this.open = false;
-                this.error = 'Editor foto gagal dimuat. Periksa koneksi lalu coba lagi.';
+                this.error = T.load();
                 return;
             }
             const img = this.$refs.image;
@@ -248,27 +255,9 @@ export function photoEditor() {
                 this.$refs.upload.submit();
             } catch (e) {
                 this.saving = false;
-                this.error = 'Foto gagal diproses di browser ini. Coba foto lain atau browser terbaru.';
+                this.error = T.process();
                 this.close();
             }
-        },
-    };
-}
-
-/** Pilihan tema di halaman Tampilan: terang, gelap, atau ikuti sistem (kunci dihapus). */
-export function themePicker() {
-    const read = () => { try { return localStorage.getItem('tr-theme') || 'system'; } catch (e) { return 'system'; } };
-    return {
-        choice: read(),
-        set(value) {
-            this.choice = value;
-            try {
-                value === 'system' ? localStorage.removeItem('tr-theme') : localStorage.setItem('tr-theme', value);
-            } catch (e) { /* mode privat: tetap berlaku untuk halaman ini */ }
-            const dark = value === 'dark' || (value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            const apply = () => document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-            const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            document.startViewTransition && !calm ? document.startViewTransition(apply) : apply();
         },
     };
 }

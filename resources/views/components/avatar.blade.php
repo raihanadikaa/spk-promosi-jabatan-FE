@@ -7,7 +7,9 @@
     $photo = $user?->avatarUrl();
     $preset = $user && Avatars::exists($user->avatar_preset) ? Avatars::PRESETS[$user->avatar_preset] : null;
     [$from, $to] = $preset ? [$preset['from'], $preset['to']] : Avatars::initialColors($name);
-    $gid = 'av' . substr(md5($name . ($preset['motif'] ?? '') . $size), 0, 8);
+    // ID gradien unik per avatar: ID kembar membuat browser memakai gradien dari avatar lain yang tersembunyi
+    // (mis. di menu akun yang tertutup) sehingga avatar ini tampak kosong.
+    $gid = 'av' . \Illuminate\Support\Str::random(10);
 @endphp
 <span {{ $attributes->merge(['class' => "relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full $size"]) }}>
     @if ($photo)

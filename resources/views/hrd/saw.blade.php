@@ -14,7 +14,7 @@
             @if ($open)
                 <form method="POST" action="{{ route('hrd.saw.run') }}">
                     @csrf
-                    <x-btn type="submit" icon="refresh" data-busy-label="Menghitung…">Hitung ulang ranking</x-btn>
+                    <x-btn type="submit" icon="refresh" data-busy-label="{{ __('Menghitung…') }}">Hitung ulang ranking</x-btn>
                 </form>
             @endif
         </x-slot:actions>

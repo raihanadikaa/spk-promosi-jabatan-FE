@@ -73,6 +73,10 @@
                                                 {{ $u->is_active ? 'Nonaktifkan' : 'Aktifkan' }}<span class="sr-only"> {{ $u->name }}</span>
                                             </x-btn>
                                         </form>
+                                        <x-btn size="sm" variant="ghost" icon="trash" class="text-bad hover:!bg-bad-bg hover:!text-bad"
+                                               x-on:click="$dispatch('user-delete', {{ \Illuminate\Support\Js::from(['id' => $u->id, 'name' => $u->name, 'url' => route('admin.users.destroy', $u)]) }})">
+                                            <span class="sr-only">{{ __('Hapus akun') }} {{ $u->name }}</span>
+                                        </x-btn>
                                     @endunless
                                 </div>
                             </td>
@@ -136,6 +140,31 @@
                     <x-btn variant="secondary" x-on:click="open = false">Batal</x-btn>
                     <x-btn type="submit"><span x-text="mode === 'edit' ? 'Simpan perubahan' : 'Tambah pengguna'"></span></x-btn>
                 </footer>
+            </form>
+        </div>
+    </div>
+    {{-- Dialog hapus akun: wajib password admin --}}
+    <div x-data="{ open: @js($errors->deleteUser->any()), target: @js(old('_target', [])) }"
+         @user-delete.window="target = $event.detail; open = true; $nextTick(() => $refs.pw.focus())" @keydown.escape.window="open = false">
+        <div x-show="open" x-cloak x-transition.opacity class="fixed inset-0 z-40 grid place-items-center bg-ink/40 p-4" @click.self="open = false">
+            <form method="POST" :action="target.url" class="w-full max-w-md rounded-panel border border-line bg-surface p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="hapus-judul">
+                @csrf @method('DELETE')
+                <input type="hidden" name="_target[id]" :value="target.id"><input type="hidden" name="_target[name]" :value="target.name"><input type="hidden" name="_target[url]" :value="target.url">
+                <div class="flex gap-3">
+                    <span class="grid size-10 shrink-0 place-items-center rounded-full bg-bad-bg text-bad"><x-icon name="trash" class="size-5" /></span>
+                    <div>
+                        <h2 id="hapus-judul" class="text-md font-bold text-ink">{{ __('Hapus akun') }} <span x-text="target.name"></span>?</h2>
+                        <p class="mt-1 text-sm text-ink-muted">{{ __('Akun dihapus permanen dan sesinya dikeluarkan. Penilaian, keputusan, dan log tetap tersimpan sebagai arsip.') }}</p>
+                    </div>
+                </div>
+                <label for="hapus-password" class="field-label mt-5">{{ __('Password Anda (admin)') }}</label>
+                <input x-ref="pw" type="password" id="hapus-password" name="password" autocomplete="current-password" required
+                       class="field-input @error('password', 'deleteUser') !border-bad @enderror">
+                @error('password', 'deleteUser')<p class="field-error">{{ $message }}</p>@enderror
+                <div class="mt-6 flex justify-end gap-2">
+                    <x-btn variant="secondary" @click="open = false">{{ __('Batal') }}</x-btn>
+                    <x-btn type="submit" variant="danger" icon="trash">{{ __('Hapus akun') }}</x-btn>
+                </div>
             </form>
         </div>
     </div>

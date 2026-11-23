@@ -1,7 +1,8 @@
 import Alpine from 'alpinejs';
 import { initCountUp } from './countup';
 import { initInteractions } from './interactions';
-import { photoEditor, themePicker } from './photo-editor';
+import { photoEditor } from './photo-editor';
+import { themePicker, themeToggle, textPicker } from './preferences';
 import { initIntro } from './intro';
 
 window.Alpine = Alpine;
@@ -12,6 +13,8 @@ initInteractions();
 
 Alpine.data('photoEditor', photoEditor);
 Alpine.data('themePicker', themePicker);
+Alpine.data('themeToggle', themeToggle);
+Alpine.data('textPicker', textPicker);
 
 Alpine.start();
 

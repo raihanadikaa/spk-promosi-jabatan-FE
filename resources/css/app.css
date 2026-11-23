@@ -82,6 +82,15 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    /* Ukuran teks pilihan pengguna. Semua ukuran font & jarak memakai rem, jadi tampilan menskala proporsional. */
+    html[data-text='sm'] {
+        font-size: 93.75%; /* 15px */
+    }
+
+    html[data-text='lg'] {
+        font-size: 112.5%; /* 18px */
+    }
+
     body {
         @apply bg-canvas font-sans text-base text-ink;
     }
@@ -205,6 +214,37 @@
     .data-table tbody tr:nth-child(9) { --r: 8; }
     .data-table tbody tr:nth-child(10) { --r: 9; }
     .data-table tbody tr:nth-child(n + 11) { --r: 10; }
+
+    /* Panel kiri halaman login: lingkaran latar melayang pelan, bar bobot terisi bergiliran, kriteria muncul satu-satu. */
+    /* Geser sedikit lalu kembali, pelan & lembut (easing gelombang sinus); tiap lingkaran punya tempo sendiri. */
+    .tr-float-a {
+        animation: tr-float-a 9s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+    }
+
+    .tr-float-b {
+        animation: tr-float-b 11s cubic-bezier(0.37, 0, 0.63, 1) -3s infinite alternate;
+    }
+
+    .tr-float-c {
+        animation: tr-float-c 13s cubic-bezier(0.37, 0, 0.63, 1) -6s infinite alternate;
+    }
+
+    .tr-seg {
+        transform-origin: left;
+        animation: tr-seg 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: calc(550ms + var(--i, 0) * 120ms);
+    }
+
+    .tr-login-row {
+        animation: tr-login-row 600ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        animation-delay: calc(700ms + var(--i, 0) * 90ms);
+    }
+
+    /* Selama intro logo diputar, animasi panel ditahan dulu supaya berjalan setelah logo mendarat. */
+    html.tr-intro-on .tr-seg,
+    html.tr-intro-on .tr-login-row {
+        animation-play-state: paused;
+    }
 
     /* Kartu muncul naik satu per satu (dipakai di dashboard). */
     .tr-stagger > * {
@@ -341,6 +381,29 @@ html.tr-navigating::after {
     to { transform: scaleX(0.92); }
 }
 
+@keyframes tr-float-a {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(-6px, 5px) scale(1.01); }
+}
+
+@keyframes tr-float-b {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(8px, -6px) scale(1.02); }
+}
+
+@keyframes tr-float-c {
+    from { transform: translate(0, 0) scale(1); opacity: 0.75; }
+    to { transform: translate(-10px, -7px) scale(1.03); opacity: 1; }
+}
+
+@keyframes tr-seg {
+    from { transform: scaleX(0); opacity: 0.3; }
+}
+
+@keyframes tr-login-row {
+    from { opacity: 0; transform: translateX(-12px); }
+}
+
 @keyframes tr-fade-in {
     from { opacity: 0; }
 }
@@ -377,6 +440,11 @@ html.tr-navigating::after {
 
 @keyframes tr-ping {
     70%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Pil pilihan bahasa meluncur halus ke tombol yang dipilih. */
+.tr-lang-pill {
+    transition: transform 260ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /* ================= Profil & pengaturan ================= */
@@ -438,30 +506,30 @@ html.tr-navigating::after {
 /* Pilihan avatar. */
 .tr-pick {
     position: relative;
-    aspect-ratio: 1;
+    display: block;
     border-radius: 9999px;
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), outline-color 150ms ease;
+    /* Cincin dari box-shadow: lingkaran halus & rata (outline sering tampak bergerigi di elemen bulat). */
+    box-shadow: 0 0 0 2px rgb(var(--c-surface)), 0 0 0 4px transparent;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 150ms ease;
 }
 
 .tr-pick:hover {
     transform: translateY(-2px) scale(1.06);
-    outline-color: rgb(var(--c-line-strong));
+    box-shadow: 0 0 0 2px rgb(var(--c-surface)), 0 0 0 4px rgb(var(--c-line-strong));
 }
 
 .tr-pick-on,
 .tr-pick-on:hover {
-    outline-color: rgb(var(--c-brand));
+    box-shadow: 0 0 0 2px rgb(var(--c-surface)), 0 0 0 4px rgb(var(--c-brand));
 }
 
 .tr-pick-on::after {
     content: '';
     position: absolute;
-    right: -2px;
-    bottom: -2px;
-    width: 1.1rem;
-    height: 1.1rem;
+    right: -4px;
+    bottom: -4px;
+    width: 1rem;
+    height: 1rem;
     border-radius: 9999px;
     border: 2px solid rgb(var(--c-surface));
     background: rgb(var(--c-brand)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 65% no-repeat;
@@ -552,10 +620,17 @@ html.tr-navigating::after {
     z-index: 200;
     display: none;
     place-items: center;
+    color: #fff;
+}
+
+/* Latar dipisah dari panggung: latar bisa memudar sementara logo terbang ke tempatnya di halaman. */
+.tr-intro-bg {
+    position: absolute;
+    will-change: opacity;
+    inset: 0;
     background:
         radial-gradient(60rem 40rem at 50% 45%, rgb(37 99 235 / 0.28), transparent 60%),
         linear-gradient(160deg, #0b1f33 0%, #10283f 45%, #174867 100%);
-    color: #fff;
 }
 
 html.tr-intro-on #tr-intro,
@@ -568,22 +643,49 @@ html.tr-intro-on #tr-intro {
     animation: tr-intro-failsafe 0.3s ease 5s forwards;
 }
 
-html.tr-intro-on body {
-    overflow: hidden;
-}
+/* Catatan: scroll halaman sengaja TIDAK dikunci selama intro. Mengunci lalu melepasnya membuat scrollbar
+   muncul tiba-tiba dan seluruh halaman bergeser tepat saat logo mendarat (terlihat "menghentak"). */
 
 .tr-intro-stage {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
 }
 
-.tr-intro-logo {
+.tr-intro-mark {
+    position: relative;
+    /* Lapisan GPU disiapkan sejak awal: tidak ada hentakan di frame pertama saat logo mulai terbang. */
+    will-change: transform;
     width: 6.5rem;
     height: 6.5rem;
+}
+
+/* Isi logo (bayangan + gambar): lapisan yang mengecil, terpisah dari pembungkus yang bergeser. */
+.tr-mark-inner {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+/* Bayangan biru sebagai lapisan sendiri (diblur sekali, lalu hanya opacity-nya yang dianimasikan). */
+.tr-mark-shadow {
+    position: absolute;
+    will-change: opacity;
+    inset: 22% 8% -14%;
+    border-radius: 35%;
+    background: rgb(37 99 235 / 0.6);
+    filter: blur(24px);
+}
+
+.tr-intro-logo {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
     overflow: visible;
-    filter: drop-shadow(0 18px 40px rgb(37 99 235 / 0.45));
 }
 
 .tr-i-box {
@@ -604,6 +706,8 @@ html.tr-intro-on body {
 
 .tr-i-word {
     margin-top: 1.5rem;
+    color: #fff;
+    will-change: transform;
     font-size: 1.85rem;
     font-weight: 800;
     letter-spacing: -0.03em;

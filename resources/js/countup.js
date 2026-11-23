@@ -74,6 +74,19 @@ function animate(el) {
 
 export function initCountUp() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.matchMedia('print').matches) return;
+
+    // Halaman login: tunggu intro logo selesai supaya angka berhitung saat terlihat.
+    const root = document.documentElement;
+    if (root.classList.contains('tr-intro-on')) {
+        const wait = new MutationObserver(() => {
+            if (!root.classList.contains('tr-intro-on')) {
+                wait.disconnect();
+                initCountUp();
+            }
+        });
+        wait.observe(root, { attributes: true, attributeFilter: ['class'] });
+        return;
+    }
     if (!('IntersectionObserver' in window)) return;
 
     const io = new IntersectionObserver((entries) => {

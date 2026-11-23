@@ -13,15 +13,18 @@
         'success' => 'bg-ok text-white shadow-sm hover:bg-ok/90',
     ];
     $classes = "$base {$sizes[$size]} {$variants[$variant]}";
+    // Teks tombol biasa (tanpa HTML) ikut bahasa tampilan; tombol berisi HTML (mis. teks sr-only) dibiarkan.
+    $html = trim($slot->toHtml());
+    $label = $html !== '' && strip_tags($html) === $html ? __(html_entity_decode($html, ENT_QUOTES)) : $slot;
 @endphp
 @if ($href)
     <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>
         @if ($icon)<x-icon :name="$icon" class="size-4" />@endif
-        <span class="tr-label">{{ $slot }}</span>
+        <span class="tr-label">{{ $label }}</span>
     </a>
 @else
     <button {{ $attributes->merge(['type' => 'button', 'class' => $classes]) }}>
         @if ($icon)<x-icon :name="$icon" class="size-4" />@endif
-        <span class="tr-label">{{ $slot }}</span>
+        <span class="tr-label">{{ $label }}</span>
     </button>
 @endif
