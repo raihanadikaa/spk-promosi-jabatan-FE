@@ -42,7 +42,7 @@
     @if ($withoutSupervisor > 0)
         <div class="mb-4 flex items-start gap-3 rounded-panel border border-warn/30 bg-warn-bg px-4 py-3 text-sm text-warn">
             <x-icon name="alert" class="mt-0.5 size-4 shrink-0" />
-            <p>{{ $withoutSupervisor }} karyawan aktif belum punya atasan penilai, jadi tidak ada yang bisa menilai mereka.
+            <p>{{ $withoutSupervisor }} karyawan aktif belum punya atasan penilai yang aktif (kosong, atau akun atasannya dinonaktifkan / diganti role), jadi tidak ada yang bisa menilai mereka.
                <a href="{{ route('hrd.employees') }}" class="font-semibold underline">Atur di halaman Karyawan</a>.</p>
         </div>
     @endif
@@ -76,12 +76,12 @@
                                     <p class="font-semibold">{{ $e['name'] }}</p>
                                     <p class="num text-sm text-ink-muted">NIK {{ $e['nik'] }}</p>
                                 </td>
-                                <td @class(['!text-bad font-medium' => ! $e['supervisor_id']])>{{ $e['assessor'] }}</td>
+                                <td @class(['!text-bad font-medium' => ! $e['supervisor_valid']])>{{ $e['assessor'] }}</td>
                                 <td>{{ $e['department'] }}</td>
                                 <td><x-status :value="$e['status']" /></td>
                                 <td class="num text-ink-muted">{{ $e['updated_at'] ? Format::dateTime($e['updated_at']) : '–' }}</td>
                                 <td class="text-right">
-                                    @if ($canRemind && $e['status'] !== 'submitted' && $e['supervisor_id'])
+                                    @if ($canRemind && $e['status'] !== 'submitted' && $e['supervisor_valid'])
                                         <form method="POST" action="{{ route('hrd.monitor.remind', $e['id']) }}">
                                             @csrf
                                             <x-btn type="submit" size="sm" variant="ghost" icon="mail">Ingatkan<span class="sr-only"> atasan {{ $e['name'] }}</span></x-btn>
