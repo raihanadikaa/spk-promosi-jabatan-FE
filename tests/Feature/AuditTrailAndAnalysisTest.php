@@ -180,7 +180,37 @@ class AuditTrailAndAnalysisTest extends TestCase
             foreach ($rows as $r) {
                 $this->assertEqualsWithDelta(round(1 / ((float) $r['raw']['C4'] + 1), 4), $r['normalized']['C4'], 0.0001);
             }
+            // Rincian kandidat menampilkan rumus dengan geseran, bukan "0 ÷ x".
+            $someone = $rows->first(fn ($r) => (float) $r['raw']['C4'] > 0);
+            $this->actingAs($hrd)->get("/hrd/ranking/{$someone['id']}")->assertOk()
+                ->assertSee('(0 + 1) ÷ (' . (int) $someone['raw']['C4'] . ' + 1)', false);
         }
+    }
+
+    /** Data demo tidak punya nilai cost 0, jadi dibuat satu: geseran +1 harus terpakai di perhitungan & tampilan. */
+    public function test_cost_bernilai_nol_memakai_geseran_di_perhitungan_dan_rincian(): void
+    {
+        $period = $this->period();
+        $c4 = \App\Models\Criterion::where('code', 'C4')->value('id');
+        $detail = \App\Models\AssessmentDetail::where('criteria_id', $c4)
+            ->whereHas('assessment', fn ($q) => $q->where('period_id', $period->id)->where('status', 'submitted'))->firstOrFail();
+        $detail->update(['raw_score' => 0]);
+
+        $hrd = $this->as('hrd@talentrank.test');
+        $this->actingAs($hrd)->post('/hrd/proses-saw')->assertSessionHasNoErrors();
+        PromotionData::flush();
+        $this->assertSame(0.0, (float) PromotionData::bounds(PromotionData::currentPeriod())['C4']);
+
+        $rows = collect(PromotionData::ranking(PromotionData::currentPeriod()));
+        foreach ($rows as $r) {
+            $this->assertEqualsWithDelta(round(1 / ((float) $r['raw']['C4'] + 1), 4), $r['normalized']['C4'], 0.0001);
+        }
+        $this->assertGreaterThan(0, $rows->filter(fn ($r) => (float) $r['raw']['C4'] > 0 && $r['normalized']['C4'] > 0)->count());
+
+        $this->actingAs($hrd)->get('/hrd/proses-saw')->assertOk()->assertSee('ada peserta bernilai 0')->assertSee('(min + 1)', false);
+        $someone = $rows->first(fn ($r) => (float) $r['raw']['C4'] > 0);
+        $this->actingAs($hrd)->get("/hrd/ranking/{$someone['id']}")->assertOk()
+            ->assertSee('(0 + 1) ÷ (' . (int) $someone['raw']['C4'] . ' + 1)', false);
     }
 
     /* ---------------- Atasan penilai yang tidak lagi valid ---------------- */
