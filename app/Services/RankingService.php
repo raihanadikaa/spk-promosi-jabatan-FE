@@ -35,6 +35,7 @@ class RankingService
 
             $criteria = Criterion::orderBy('sort_order')->get();
             $weights = $period->weights()->pluck('weight_value', 'criteria_id');
+            $types = $period->weights()->pluck('attribute_type', 'criteria_id');
             $total = (int) $weights->sum();
             if ($total !== 100 || $weights->count() !== $criteria->count()) {
                 throw ValidationException::withMessages(['saw' => "Total bobot kriteria masih {$total}%. Perbaiki di halaman Kriteria & bobot sebelum menghitung."]);
@@ -80,7 +81,7 @@ class RankingService
             $input = $criteria->map(fn ($c) => [
                 'code' => $c->code,
                 'weight' => $weights[$c->id] / 100,
-                'type' => $c->attribute_type,
+                'type' => $types[$c->id] ?? $c->attribute_type,
             ])->all();
 
             $results = $this->saw->calculate($input, $matrix);

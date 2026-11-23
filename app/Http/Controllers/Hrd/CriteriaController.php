@@ -36,7 +36,7 @@ class CriteriaController extends Controller
 
             // Periode yang belum ditutup mendapat bobot 0 untuk kriteria baru; HRD mengatur ulang sampai total 100%.
             foreach (AssessmentPeriod::where('status', '!=', AssessmentPeriod::CLOSED)->pluck('id') as $periodId) {
-                CriteriaWeight::create(['period_id' => $periodId, 'criteria_id' => $criterion->id, 'weight_value' => 0]);
+                CriteriaWeight::create(['period_id' => $periodId, 'criteria_id' => $criterion->id, 'weight_value' => 0, 'attribute_type' => $criterion->attribute_type]);
             }
 
             return $criterion;
@@ -58,6 +58,12 @@ class CriteriaController extends Controller
         $criterion->fill($data);
         $changes = collect($criterion->getDirty())->map(fn ($new, $field) => ['dari' => $criterion->getOriginal($field), 'ke' => $new])->all();
         $criterion->save();
+        if (isset($changes['attribute_type'])) {
+            // Hanya terjadi saat tidak ada periode berlangsung: periode draft ikut jenis baru, periode tertutup tetap.
+            CriteriaWeight::where('criteria_id', $criterion->id)
+                ->whereIn('period_id', AssessmentPeriod::where('status', AssessmentPeriod::DRAFT)->select('id'))
+                ->update(['attribute_type' => $criterion->attribute_type, 'updated_at' => now()]);
+        }
         if ($changes) {
             Activity::log('kriteria.ubah', "Mengubah kriteria {$criterion->code}: " . implode(', ', array_keys($changes)) . '.', $criterion, properties: $changes);
         }

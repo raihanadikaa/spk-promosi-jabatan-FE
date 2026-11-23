@@ -133,6 +133,36 @@ class AuditTrailAndAnalysisTest extends TestCase
             ->assertOk()->assertSee('Catatan nomor 30.')->assertDontSee('Catatan nomor 60.');
     }
 
+    /* ---------------- Jenis kriteria per periode ---------------- */
+
+    public function test_ubah_jenis_kriteria_tidak_mengubah_periode_yang_sudah_ditutup(): void
+    {
+        $closed = AssessmentPeriod::where('status', 'closed')->firstOrFail();
+        $current = $this->period();
+        $hrd = $this->as('hrd@talentrank.test');
+        PromotionData::flush();
+        $closedBefore = collect(PromotionData::criteria($closed->id))->pluck('type', 'code')->all();
+        $this->assertSame('cost', $closedBefore['C4']);
+
+        $this->actingAs($hrd)->put('/hrd/kriteria', ['criteria' => [
+            'C1' => ['weight' => 15, 'type' => 'benefit'], 'C2' => ['weight' => 30, 'type' => 'benefit'],
+            'C3' => ['weight' => 25, 'type' => 'benefit'], 'C4' => ['weight' => 15, 'type' => 'benefit'], 'C5' => ['weight' => 15, 'type' => 'benefit'],
+        ]])->assertSessionHasNoErrors();
+
+        PromotionData::flush();
+        $this->assertSame('benefit', collect(PromotionData::criteria($current->id))->firstWhere('code', 'C4')['type']);
+        $this->assertSame($closedBefore, collect(PromotionData::criteria($closed->id))->pluck('type', 'code')->all());
+        $this->assertSame(['dari' => 'cost', 'ke' => 'benefit'], ActivityLog::where('action', 'kriteria.bobot')->firstOrFail()->properties['C4']['jenis']);
+
+        // Ranking periode berjalan dihitung dengan jenis baru: C4 terbesar sekarang bernilai r = 1.
+        $this->actingAs($hrd)->post('/hrd/proses-saw')->assertSessionHasNoErrors();
+        PromotionData::flush();
+        $period = PromotionData::currentPeriod();
+        $max = max(array_map(fn ($r) => (float) ($r['raw']['C4'] ?? 0), PromotionData::ranking($period)));
+        $best = collect(PromotionData::ranking($period))->first(fn ($r) => (float) $r['raw']['C4'] === $max);
+        $this->assertEquals(1.0, $best['normalized']['C4']);
+    }
+
     /* ---------------- Analisis sensitivitas ---------------- */
 
     public function test_geser_bobot_menjaga_total_100_dan_proporsi_kriteria_lain(): void

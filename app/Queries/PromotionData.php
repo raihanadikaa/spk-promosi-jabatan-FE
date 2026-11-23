@@ -102,14 +102,15 @@ class PromotionData
         $periodId ??= self::currentPeriodModel()?->id;
 
         return self::memo("criteria.$periodId", function () use ($periodId) {
-            $weights = $periodId ? CriteriaWeight::where('period_id', $periodId)->pluck('weight_value', 'criteria_id') : collect();
+            $rows = $periodId ? CriteriaWeight::where('period_id', $periodId)->get(['criteria_id', 'weight_value', 'attribute_type'])->keyBy('criteria_id') : collect();
 
             return self::criteriaModels()->map(fn (Criterion $c) => [
                 'id' => $c->id,
                 'code' => $c->code,
                 'name' => $c->criteria_name,
-                'weight' => (int) ($weights[$c->id] ?? 0),
-                'type' => $c->attribute_type,
+                'weight' => (int) ($rows[$c->id]->weight_value ?? 0),
+                // Jenis per periode; kriteria tanpa baris bobot memakai jenis bawaannya.
+                'type' => $rows[$c->id]->attribute_type ?? $c->attribute_type,
                 'input' => $c->input_type,
                 'unit' => $c->unit,
                 'min' => $c->min_value,
@@ -554,7 +555,7 @@ class PromotionData
     {
         return self::memo("bounds.{$period['id']}", function () use ($period) {
             $codes = self::criteriaCodes();
-            $types = self::criteriaModels()->pluck('attribute_type', 'id');
+            $types = collect(self::criteria($period['id']))->pluck('type', 'id');
 
             return AssessmentDetail::query()
                 ->join('assessments', 'assessments.id', '=', 'assessment_details.assessment_id')

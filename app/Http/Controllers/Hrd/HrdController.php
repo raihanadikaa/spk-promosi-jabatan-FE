@@ -202,9 +202,12 @@ class HrdController extends Controller
                     $changes[$c->code]['bobot'] = ['dari' => $oldWeight, 'ke' => (int) $input['weight']];
                 }
 
-                if ($c->attribute_type !== $input['type']) {
-                    $changes[$c->code]['jenis'] = ['dari' => $c->attribute_type, 'ke' => $input['type']];
-                    $c->update(['attribute_type' => $input['type']]);
+                // Jenis disimpan untuk periode ini saja; periode yang sudah ditutup tidak ikut berubah.
+                $oldType = $weight->attribute_type ?? $c->attribute_type;
+                $weight->attribute_type = $input['type'];
+                if ($oldType !== $input['type']) {
+                    $changes[$c->code]['jenis'] = ['dari' => $oldType, 'ke' => $input['type']];
+                    $c->update(['attribute_type' => $input['type']]); // jadi bawaan untuk periode berikutnya
                     $weight->updated_at = now(); // jenis berubah → ranking perlu dihitung ulang
                 }
                 $weight->save();
@@ -230,16 +233,19 @@ class HrdController extends Controller
             throw ValidationException::withMessages(['criteria' => 'Bobot periode yang sudah ditutup tidak bisa diubah.']);
         }
         $previous = $period->previous();
-        $weights = $previous?->weights()->pluck('weight_value', 'criteria_id') ?? collect();
+        $weights = $previous?->weights()->get(['criteria_id', 'weight_value', 'attribute_type'])->keyBy('criteria_id') ?? collect();
         if ($weights->isEmpty()) {
             throw ValidationException::withMessages(['criteria' => 'Belum ada periode sebelumnya yang bobotnya bisa disalin.']);
         }
 
         DB::transaction(function () use ($period, $weights) {
-            foreach (Criterion::pluck('id') as $criteriaId) {
+            foreach (Criterion::all(['id', 'attribute_type']) as $c) {
                 CriteriaWeight::updateOrCreate(
-                    ['period_id' => $period->id, 'criteria_id' => $criteriaId],
-                    ['weight_value' => (int) ($weights[$criteriaId] ?? 0)],
+                    ['period_id' => $period->id, 'criteria_id' => $c->id],
+                    [
+                        'weight_value' => (int) ($weights[$c->id]->weight_value ?? 0),
+                        'attribute_type' => $weights[$c->id]->attribute_type ?? $c->attribute_type,
+                    ],
                 );
             }
         });

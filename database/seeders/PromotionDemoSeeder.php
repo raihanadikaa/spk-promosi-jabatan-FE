@@ -67,7 +67,7 @@ class PromotionDemoSeeder extends Seeder
         $weights = ['C1' => 15, 'C2' => 30, 'C3' => 25, 'C4' => 15, 'C5' => 15];
         foreach ([$previousPeriod, $period] as $p) {
             foreach ($weights as $code => $w) {
-                CriteriaWeight::create(['period_id' => $p->id, 'criteria_id' => $criteria[$code]->id, 'weight_value' => $w]);
+                CriteriaWeight::create(['period_id' => $p->id, 'criteria_id' => $criteria[$code]->id, 'weight_value' => $w, 'attribute_type' => $criteria[$code]->attribute_type]);
             }
         }
 

@@ -69,13 +69,14 @@ class PeriodService
 
             // Bobot disalin dari periode terakhir; jika belum ada, dibagi rata lalu sisa ke kriteria pertama.
             $previous = $source ? $source->weights()->pluck('weight_value', 'criteria_id') : collect();
-            $criteria = Criterion::orderBy('sort_order')->pluck('id');
+            $criteria = Criterion::orderBy('sort_order')->get(['id', 'attribute_type'])->values();
             $even = intdiv(100, max(1, $criteria->count()));
-            foreach ($criteria as $i => $criteriaId) {
+            foreach ($criteria as $i => $c) {
                 CriteriaWeight::create([
                     'period_id' => $period->id,
-                    'criteria_id' => $criteriaId,
-                    'weight_value' => $previous[$criteriaId] ?? ($even + ($i === 0 ? 100 - $even * $criteria->count() : 0)),
+                    'criteria_id' => $c->id,
+                    'weight_value' => $previous[$c->id] ?? ($even + ($i === 0 ? 100 - $even * $criteria->count() : 0)),
+                    'attribute_type' => $c->attribute_type, // jenis bawaan terkini
                 ]);
             }
 
