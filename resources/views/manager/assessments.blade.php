@@ -21,7 +21,30 @@
         @elseif ($team->isEmpty())
             <x-empty-state icon="search" title="Tidak ada yang cocok" body="Coba kata kunci lain atau hapus filter." />
         @else
-            <div class="overflow-x-auto">
+            @php
+                $action = fn ($e) => match (true) {
+                    $e['status'] === 'submitted', ! $open => ['Lihat', 'secondary', 'eye'],
+                    $e['status'] === 'draft' => ['Lanjutkan', 'primary', 'pencil'],
+                    default => ['Isi nilai', 'primary', 'pencil'],
+                };
+            @endphp
+            {{-- HP: kartu, supaya status dan tombol langsung terlihat tanpa menggeser tabel. --}}
+            <ul class="divide-y divide-line sm:hidden">
+                @foreach ($team as $e)
+                    @php [$label, $variant, $icon] = $action($e); @endphp
+                    <li class="flex items-center gap-3 px-4 py-3.5">
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate font-semibold">{{ $e['name'] }}</p>
+                            <p class="mt-0.5 text-sm text-ink-muted">{{ $e['position'] }} · {{ Format::number($e['tenure'], 1) }} th</p>
+                            <x-status :value="$e['status']" class="mt-1.5" />
+                        </div>
+                        <x-btn size="sm" :variant="$variant" :icon="$icon" :href="route('manager.assessments.edit', $e['id'])">
+                            {{ $label }}<span class="sr-only"> penilaian {{ $e['name'] }}</span>
+                        </x-btn>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="hidden overflow-x-auto sm:block">
                 <table class="data-table min-w-[720px]">
                     <thead>
                         <tr>
@@ -45,13 +68,7 @@
                                 <td><x-status :value="$e['status']" /></td>
                                 <td class="text-sm text-ink-muted">{{ Format::dateTime($e['submitted_at'] ?? $e['updated_at']) }}</td>
                                 <td class="text-right">
-                                    @php
-                                        [$label, $variant, $icon] = match (true) {
-                                            $e['status'] === 'submitted', ! $open => ['Lihat', 'secondary', 'eye'],
-                                            $e['status'] === 'draft' => ['Lanjutkan', 'primary', 'pencil'],
-                                            default => ['Isi nilai', 'primary', 'pencil'],
-                                        };
-                                    @endphp
+                                    @php [$label, $variant, $icon] = $action($e); @endphp
                                     <x-btn size="sm" :variant="$variant" :icon="$icon" :href="route('manager.assessments.edit', $e['id'])">
                                         {{ $label }}<span class="sr-only"> penilaian {{ $e['name'] }}</span>
                                     </x-btn>

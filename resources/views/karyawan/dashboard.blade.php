@@ -24,7 +24,7 @@
                         </p>
                     @endif
                 </div>
-                <div class="text-right">
+                <div class="sm:text-right">
                     <p class="text-sm text-ink-muted">Peringkat</p>
                     <p class="num mt-1 text-xl font-bold">{{ $result['rank'] }} <span class="text-md font-medium text-ink-muted">dari {{ $total }}</span></p>
                 </div>
@@ -70,6 +70,12 @@
         <p class="mt-4 text-sm text-ink-muted">
             Ada yang tidak sesuai? Sampaikan ke {{ $employee->supervisor?->name ?? 'atasan Anda' }} atau HRD sebelum periode ditutup.
         </p>
+    @endif
+
+    @if (count($trend) > 1)
+        <x-panel class="mt-6" title="Perkembangan skor" description="Skor akhir Anda dari periode ke periode.">
+            <x-score-trend :history="$trend" :current-period-id="$period['id'] ?? null" :list="false" />
+        </x-panel>
     @endif
 
     @if (! empty($history))

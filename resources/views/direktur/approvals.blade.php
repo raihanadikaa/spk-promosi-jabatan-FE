@@ -29,7 +29,29 @@
             <x-empty-state icon="trophy" title="Belum ada kandidat"
                            body="Kandidat muncul setelah HRD menghitung ranking. {{ \App\Queries\PromotionData::RECOMMENDED_COUNT }} peringkat teratas otomatis direkomendasikan." />
         @else
-            <div class="overflow-x-auto">
+            {{-- HP: kartu, supaya status dan tombol tinjau langsung terlihat. --}}
+            <ul class="divide-y divide-line sm:hidden">
+                @foreach ($rows as $row)
+                    @php $pending = $row['approval_status'] === 'pending' && $open; @endphp
+                    <li class="px-4 py-3.5">
+                        <div class="flex items-start gap-3">
+                            <x-rank :value="$row['rank']" />
+                            <div class="min-w-0 flex-1">
+                                <p class="truncate font-semibold">{{ $row['name'] }}</p>
+                                <p class="text-sm text-ink-muted">{{ $row['position'] }} → {{ $row['proposed_position'] ?? '–' }}</p>
+                            </div>
+                            <p class="num font-bold">{{ Format::score($row['score']) }}</p>
+                        </div>
+                        <div class="mt-2.5 flex items-center justify-between gap-3 pl-10">
+                            <x-status :value="$row['approval_status'] === 'pending' ? 'waiting' : $row['approval_status']" />
+                            <x-btn size="sm" :variant="$pending ? 'primary' : 'secondary'" :href="route('direktur.ranking.show', $row['id'])">
+                                {{ $pending ? 'Tinjau' : 'Lihat' }}<span class="sr-only"> {{ $row['name'] }}</span>
+                            </x-btn>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="hidden overflow-x-auto sm:block">
                 <table class="data-table min-w-[860px]">
                     <thead>
                         <tr>
