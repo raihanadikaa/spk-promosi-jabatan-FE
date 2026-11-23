@@ -8,10 +8,21 @@ namespace App\Services;
  * Normalisasi:
  *   benefit → r = x / max(x)
  *   cost    → r = min(x) / x
+ *             Bila nilai terkecil 0 (mis. 0 hari absen), seluruh kolom digeser +1 lebih dulu:
+ *             r = (min + 1) / (x + 1). Tanpa geseran, min/x = 0 untuk SEMUA nilai di atas 0
+ *             (1 hari dan 30 hari dianggap sama buruknya). Kolom tanpa nilai 0 tidak berubah sama sekali.
  * Skor akhir: V = Σ wj · rij
  */
 class SawCalculator
 {
+    /**
+     * Geseran kolom cost: 0 bila nilai terkecil > 0 (rumus standar), selain itu cukup agar nilai terkecil menjadi 1.
+     */
+    public static function costOffset(float $min): float
+    {
+        return $min > 0 ? 0.0 : 1.0 - $min;
+    }
+
     /**
      * @param  array<int, array{code: string, weight: float, type: string}>  $criteria  bobot dalam pecahan (0–1)
      * @param  array<int|string, array<string, float>>  $matrix  [alternatifId => [kodeKriteria => nilai mentah]]
@@ -26,7 +37,8 @@ class SawCalculator
         $bounds = [];
         foreach ($criteria as $c) {
             $column = array_column($matrix, $c['code']);
-            $bounds[$c['code']] = ['max' => max($column), 'min' => min($column)];
+            $min = (float) min($column);
+            $bounds[$c['code']] = ['max' => max($column), 'min' => $min, 'offset' => self::costOffset($min)];
         }
 
         $results = [];
@@ -39,7 +51,7 @@ class SawCalculator
                 $b = $bounds[$c['code']];
 
                 $r = $c['type'] === 'cost'
-                    ? ($x > 0 ? $b['min'] / $x : 1.0)
+                    ? ($b['min'] + $b['offset']) / ($x + $b['offset'])
                     : ($b['max'] > 0 ? $x / $b['max'] : 0.0);
 
                 $normalized[$c['code']] = round($r, 4);

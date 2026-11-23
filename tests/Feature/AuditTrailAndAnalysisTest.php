@@ -172,6 +172,15 @@ class AuditTrailAndAnalysisTest extends TestCase
 
         $page = $this->actingAs($hrd)->get('/hrd/proses-saw')->assertOk();
         $minC4 == 0.0 ? $page->assertSee('ada peserta bernilai 0') : $page->assertDontSee('ada peserta bernilai 0');
+
+        // Nilai 0 → geseran +1: peserta di atas 0 tidak lagi semuanya r = 0, dan yang lebih kecil tetap lebih baik.
+        if ($minC4 == 0.0) {
+            $page->assertSee('(min + 1)', false);
+            $rows = collect(PromotionData::ranking(PromotionData::currentPeriod()));
+            foreach ($rows as $r) {
+                $this->assertEqualsWithDelta(round(1 / ((float) $r['raw']['C4'] + 1), 4), $r['normalized']['C4'], 0.0001);
+            }
+        }
     }
 
     /* ---------------- Atasan penilai yang tidak lagi valid ---------------- */

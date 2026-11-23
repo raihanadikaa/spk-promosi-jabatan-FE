@@ -61,7 +61,7 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 - Skor akhir: `V = Σ wⱼ · rᵢⱼ`
 - Seluruh jejak disimpan: `assessment_details` (nilai mentah) → `normalized_scores` (r dan w·r) → `ranking_results` (V, peringkat, keputusan).
 - Bobot **dan jenis** (benefit/cost) disimpan per periode di `criteria_weights`, jadi mengubah jenis di periode baru tidak mengubah periode lama.
-- Catatan: pada kriteria cost, bila ada peserta bernilai 0 maka semua nilai di atas 0 mendapat r = 0 (sifat rumus `min/x`). Halaman Proses SAW menampilkan peringatan saat ini terjadi.
+- Catatan: pada kriteria cost, bila nilai terkecil 0 (mis. 0 hari absen) seluruh kolom digeser +1 sehingga r = `(min+1)/(x+1)`. Tanpa geseran, `min/x` membuat semua nilai di atas 0 mendapat r = 0 (1 hari dan 30 hari dianggap sama buruknya). Kriteria tanpa nilai 0 tetap memakai `min/x` standar. Halaman Proses SAW menampilkan keterangan saat geseran dipakai.
 
 ## Fitur pendukung keputusan
 
