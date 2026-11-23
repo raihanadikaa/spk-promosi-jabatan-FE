@@ -379,6 +379,260 @@ html.tr-navigating::after {
     70%, 100% { transform: scale(2.4); opacity: 0; }
 }
 
+/* ================= Profil & pengaturan ================= */
+/* Tombol alat di editor foto (latar gelap). */
+.tr-tool {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+    color: rgb(226 232 240);
+    background: rgb(255 255 255 / 0.08);
+    transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.tr-tool:hover {
+    background: rgb(255 255 255 / 0.16);
+}
+
+.tr-tool:active {
+    transform: scale(0.94);
+}
+
+/* Kotak potong berbentuk lingkaran + filter pratinjau langsung di kanvas. */
+.tr-cropper .cropper-view-box,
+.tr-cropper .cropper-face {
+    border-radius: 9999px;
+}
+
+.tr-cropper .cropper-view-box {
+    outline: 2px solid rgb(255 255 255 / 0.9);
+    outline-offset: 0;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+}
+
+.tr-cropper .cropper-view-box img,
+.tr-cropper .cropper-canvas img {
+    filter: var(--tr-filter, none);
+}
+
+.tr-cropper .cropper-modal {
+    background: rgb(11 17 29);
+    opacity: 0.7;
+}
+
+.tr-cropper .cropper-line,
+.tr-cropper .cropper-point:not(.point-se):not(.point-sw):not(.point-ne):not(.point-nw) {
+    display: none;
+}
+
+.tr-cropper .cropper-point {
+    width: 10px;
+    height: 10px;
+    border-radius: 9999px;
+    background: #fff;
+    opacity: 1;
+}
+
+/* Pilihan avatar. */
+.tr-pick {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 9999px;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), outline-color 150ms ease;
+}
+
+.tr-pick:hover {
+    transform: translateY(-2px) scale(1.06);
+    outline-color: rgb(var(--c-line-strong));
+}
+
+.tr-pick-on,
+.tr-pick-on:hover {
+    outline-color: rgb(var(--c-brand));
+}
+
+.tr-pick-on::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 9999px;
+    border: 2px solid rgb(var(--c-surface));
+    background: rgb(var(--c-brand)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 65% no-repeat;
+}
+
+/* Miniatur aplikasi untuk pilihan tema. */
+.tr-theme-mini {
+    display: flex;
+    height: 5.5rem;
+    border-color: rgb(var(--c-line));
+}
+
+.tr-mini-half {
+    display: flex;
+    flex: 1;
+    gap: 4px;
+    padding: 6px;
+    background: #f8fafc;
+}
+
+.tr-mini-dark .tr-mini-half,
+.tr-mini-dark-half {
+    background: #0b111d !important;
+}
+
+.tr-mini-side {
+    width: 22%;
+    border-radius: 3px;
+    background: #fff;
+    box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+.tr-mini-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tr-mini-bar {
+    height: 8px;
+    border-radius: 2px;
+    background: #2563eb;
+    width: 45%;
+}
+
+.tr-mini-card {
+    height: 14px;
+    border-radius: 3px;
+    background: #fff;
+    box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+.tr-mini-dark .tr-mini-side,
+.tr-mini-dark .tr-mini-card,
+.tr-mini-dark-half .tr-mini-side,
+.tr-mini-dark-half .tr-mini-card {
+    background: #111927;
+    box-shadow: 0 0 0 1px #243044;
+}
+
+.tr-mini-dark .tr-mini-bar,
+.tr-mini-dark-half .tr-mini-bar {
+    background: #3b82f6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Lonceng bergoyang sebentar saat ada notifikasi baru. */
+    .tr-bell {
+        transform-origin: 50% 10%;
+        animation: tr-ring 1.6s ease-in-out 0.8s 2;
+    }
+}
+
+@keyframes tr-ring {
+    0%, 60%, 100% { transform: rotate(0); }
+    8% { transform: rotate(14deg); }
+    16% { transform: rotate(-12deg); }
+    24% { transform: rotate(9deg); }
+    32% { transform: rotate(-6deg); }
+    40% { transform: rotate(3deg); }
+}
+
+/* ================= Intro logo (login) & animasi keluar ================= */
+.tr-intro {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    place-items: center;
+    background:
+        radial-gradient(60rem 40rem at 50% 45%, rgb(37 99 235 / 0.28), transparent 60%),
+        linear-gradient(160deg, #0b1f33 0%, #10283f 45%, #174867 100%);
+    color: #fff;
+}
+
+html.tr-intro-on #tr-intro,
+.tr-outro {
+    display: grid;
+}
+
+/* Pengaman: bila JavaScript gagal, layar intro hilang sendiri. */
+html.tr-intro-on #tr-intro {
+    animation: tr-intro-failsafe 0.3s ease 5s forwards;
+}
+
+html.tr-intro-on body {
+    overflow: hidden;
+}
+
+.tr-intro-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.tr-intro-logo {
+    width: 6.5rem;
+    height: 6.5rem;
+    overflow: visible;
+    filter: drop-shadow(0 18px 40px rgb(37 99 235 / 0.45));
+}
+
+.tr-i-box {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.tr-i-dot {
+    transform-box: fill-box;
+    transform-origin: 50% 100%; /* gepeng/regang dari titik pijak */
+}
+
+.tr-i-glow {
+    transform-box: fill-box;
+    transform-origin: center;
+    opacity: 0;
+}
+
+.tr-i-word {
+    margin-top: 1.5rem;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.tr-i-tag {
+    margin-top: 0.6rem;
+    font-size: 0.875rem;
+    color: rgb(255 255 255 / 0.62);
+}
+
+/* Keadaan awal sebelum animasi berjalan (mencegah logo lengkap tampil sekejap). */
+html.tr-intro-on #tr-intro .tr-i-box,
+html.tr-intro-on #tr-intro .tr-i-dot,
+html.tr-intro-on #tr-intro .tr-i-word,
+html.tr-intro-on #tr-intro .tr-i-tag {
+    opacity: 0;
+}
+
+html.tr-intro-on #tr-intro .tr-i-stairs {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+}
+
+@keyframes tr-intro-failsafe {
+    to { opacity: 0; visibility: hidden; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         transition-duration: 0.01ms !important;

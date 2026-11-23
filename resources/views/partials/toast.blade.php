@@ -4,6 +4,8 @@
         (bool) session('success') => ['success', session('success')],
         (bool) session('error') => ['error', session('error')],
         $errors->any() => ['error', $errors->first()],
+        // Error dari form dengan error bag sendiri (mis. sesi login, hapus akun)
+        collect($errors->getBags())->contains(fn ($bag) => $bag->any()) => ['error', collect($errors->getBags())->first(fn ($bag) => $bag->any())->first()],
         default => null,
     };
 @endphp

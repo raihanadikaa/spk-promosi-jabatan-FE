@@ -10,9 +10,11 @@
     <title>TalentRank</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     @include('partials.theme-init')
+    @include('partials.intro-init')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-surface">
+@include('partials.intro')
 <div class="grid min-h-screen bg-surface lg:grid-cols-[minmax(28rem,.92fr)_1.08fr]">
 
     <main class="flex flex-col px-6 py-8 sm:px-12 lg:order-2 lg:px-16">
