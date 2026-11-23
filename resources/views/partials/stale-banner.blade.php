@@ -13,7 +13,7 @@
         @if (auth()->user()->hasRole('hrd'))
             <form method="POST" action="{{ route('hrd.saw.run') }}">
                 @csrf
-                <x-btn type="submit" size="sm" icon="refresh">Hitung ulang sekarang</x-btn>
+                <x-btn type="submit" size="sm" icon="refresh" data-busy-label="Menghitung…">Hitung ulang sekarang</x-btn>
             </form>
         @else
             <p class="text-sm">HRD akan menghitung ulang sebelum keputusan final.</p>

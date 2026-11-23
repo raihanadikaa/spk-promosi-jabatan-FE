@@ -1,7 +1,10 @@
 import Alpine from 'alpinejs';
 import { initCountUp } from './countup';
+import { initInteractions } from './interactions';
 
 window.Alpine = Alpine;
+
+initInteractions();
 
 Alpine.start();
 

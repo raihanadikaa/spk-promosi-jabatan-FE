@@ -38,7 +38,7 @@
             @endif
 
             <form method="POST" action="{{ route('login.attempt') }}" class="mt-8 space-y-5" novalidate
-                  x-data="{ show: false, busy: false }" @submit="busy = true">
+                  x-data="{ show: false, busy: false }" @submit="busy = true" data-no-busy>
                 @csrf
 
                 <div>

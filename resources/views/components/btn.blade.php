@@ -17,11 +17,11 @@
 @if ($href)
     <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>
         @if ($icon)<x-icon :name="$icon" class="size-4" />@endif
-        {{ $slot }}
+        <span class="tr-label">{{ $slot }}</span>
     </a>
 @else
     <button {{ $attributes->merge(['type' => 'button', 'class' => $classes]) }}>
         @if ($icon)<x-icon :name="$icon" class="size-4" />@endif
-        {{ $slot }}
+        <span class="tr-label">{{ $slot }}</span>
     </button>
 @endif
