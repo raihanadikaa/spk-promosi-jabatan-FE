@@ -78,6 +78,44 @@ class PerformanceTest extends TestCase
         $this->actingAs($hrd)->get('/hrd/dashboard')->assertOk()->assertSee('Sebaran skor akhir');
     }
 
+    /**
+     * Proses SAW menyimpan secara massal: jumlah query tidak bertambah per karyawan,
+     * dan keputusan direktur yang sudah final (beserta siapa & kapan) tetap utuh setelah dihitung ulang.
+     */
+    public function test_proses_saw_ribuan_karyawan_hemat_query_dan_keputusan_tetap_utuh(): void
+    {
+        $this->addEmployees(2000);
+        $period = AssessmentPeriod::where('status', 'ongoing')->first();
+        $direktur = User::where('email', 'direktur@talentrank.test')->first();
+
+        $approved = \App\Models\RankingResult::where('period_id', $period->id)->where('approval_status', 'approved')->firstOrFail();
+        $approvedAt = $approved->getRawOriginal('approved_at');
+        $this->assertSame($direktur->id, $approved->approved_by);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $count = app(RankingService::class)->calculate($period);
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertSame(\App\Models\RankingResult::where('period_id', $period->id)->count(), $count);
+        // ±2.000 kandidat × 5 kriteria: dulu ±12.000 query (satu per baris), sekarang dicicil per 500 baris.
+        $this->assertLessThan(100, $queries, "Proses SAW menjalankan {$queries} query");
+
+        $fresh = $approved->fresh();
+        $this->assertSame('approved', $fresh->approval_status);
+        $this->assertSame($direktur->id, $fresh->approved_by);
+        $this->assertSame($approvedAt, $fresh->getRawOriginal('approved_at'));
+        $this->assertNotNull($fresh->approval_note);
+
+        // Peringkat tetap berurutan 1..n tanpa lompatan atau ganda.
+        $ranks = \App\Models\RankingResult::where('period_id', $period->id)->orderBy('rank')->pluck('rank')->all();
+        $this->assertSame(range(1, count($ranks)), $ranks);
+        // Masa kerja (kriteria otomatis) tersimpan untuk tiap penilaian.
+        $this->assertSame(0, Assessment::where('period_id', $period->id)->where('status', 'submitted')
+            ->whereDoesntHave('details', fn ($q) => $q->where('criteria_id', Criterion::where('code', 'C1')->value('id')))->count());
+    }
+
     /** @return array<string, int> */
     private function measure(): array
     {

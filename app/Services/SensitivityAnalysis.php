@@ -125,10 +125,11 @@ class SensitivityAnalysis
             ->join('ranking_results', fn ($j) => $j->on('ranking_results.employee_id', '=', 'assessments.employee_id')
                 ->on('ranking_results.period_id', '=', 'assessments.period_id'))
             ->where('assessments.period_id', $period['id'])
-            ->orderBy('assessments.employee_id')
-            ->select('assessments.employee_id', 'assessment_details.criteria_id', 'assessment_details.raw_score')
+            ->select('assessment_details.id', 'assessments.employee_id', 'assessment_details.criteria_id', 'assessment_details.raw_score')
             ->toBase()
-            ->lazy(2000)
+            // Dibaca per 2.000 baris berdasarkan id detail (unik): urutan pasti, tidak ada baris terbaca dua kali/terlewat,
+            // dan tiap halaman langsung loncat lewat indeks (bukan OFFSET yang makin lambat di halaman belakang).
+            ->lazyById(2000, 'assessment_details.id', 'id')
             ->each(function ($r) use (&$matrix, $codeById) {
                 if (isset($codeById[$r->criteria_id])) {
                     $matrix[$r->employee_id][$codeById[$r->criteria_id]] = (float) $r->raw_score;
