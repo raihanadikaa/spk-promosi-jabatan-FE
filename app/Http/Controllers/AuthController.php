@@ -72,6 +72,7 @@ class AuthController extends Controller
             }
 
             $user->forceFill(['last_login_at' => now()])->saveQuietly();
+            \App\Support\Activity::log('akun.login', "{$user->name} masuk ke sistem.", $user);
 
             return redirect()
                 ->intended($user->dashboardUrl())
@@ -119,6 +120,9 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        if ($user = Auth::user()) {
+            \App\Support\Activity::log('akun.logout', "{$user->name} keluar dari sistem.", $user);
+        }
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

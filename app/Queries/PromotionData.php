@@ -102,14 +102,15 @@ class PromotionData
         $periodId ??= self::currentPeriodModel()?->id;
 
         return self::memo("criteria.$periodId", function () use ($periodId) {
-            $weights = $periodId ? CriteriaWeight::where('period_id', $periodId)->pluck('weight_value', 'criteria_id') : collect();
+            $rows = $periodId ? CriteriaWeight::where('period_id', $periodId)->get(['criteria_id', 'weight_value', 'attribute_type'])->keyBy('criteria_id') : collect();
 
             return self::criteriaModels()->map(fn (Criterion $c) => [
                 'id' => $c->id,
                 'code' => $c->code,
                 'name' => $c->criteria_name,
-                'weight' => (int) ($weights[$c->id] ?? 0),
-                'type' => $c->attribute_type,
+                'weight' => (int) ($rows[$c->id]->weight_value ?? 0),
+                // Jenis per periode; kriteria tanpa baris bobot memakai jenis bawaannya.
+                'type' => $rows[$c->id]->attribute_type ?? $c->attribute_type,
                 'input' => $c->input_type,
                 'unit' => $c->unit,
                 'min' => $c->min_value,
@@ -211,7 +212,7 @@ class PromotionData
             ->with([
                 'department:id,department_name',
                 'position:id,position_name,level',
-                'supervisor:id,name',
+                'supervisor:id,name,is_active,role_id',
                 'assessments' => fn ($q) => $q->where('period_id', $periodId)->with('details:id,assessment_id,criteria_id,raw_score'),
             ])
             ->orderBy('name')
@@ -236,8 +237,14 @@ class PromotionData
             'level' => $e->position->level,
             'join_date' => $e->join_date->toDateString(),
             'tenure' => $e->tenureAt($end),
-            'assessor' => $e->supervisor?->name ?? 'Belum ditentukan',
+            'assessor' => match (true) {
+                ! $e->supervisor => 'Belum ditentukan',
+                ! self::isValidSupervisor($e->supervisor) => $e->supervisor->name . ' (tidak aktif sebagai atasan)',
+                default => $e->supervisor->name,
+            },
             'supervisor_id' => $e->supervisor_id,
+            // false = belum ada atasan, atau atasannya nonaktif / bukan role atasan lagi: tidak ada yang bisa menilai.
+            'supervisor_valid' => $e->supervisor !== null && self::isValidSupervisor($e->supervisor),
             'user_id' => $e->user_id,
             'is_active' => $e->is_active,
             'assessment_id' => $a?->id,
@@ -247,6 +254,13 @@ class PromotionData
             'submitted_at' => $a?->submitted_at?->format('Y-m-d H:i'),
             'raw' => $raw,
         ];
+    }
+
+    private static function isValidSupervisor(\App\Models\User $user): bool
+    {
+        $managerRole = self::memo('role.manager', fn () => \App\Models\Role::where('role_name', 'manager')->value('id'));
+
+        return (bool) $user->is_active && (int) $user->role_id === (int) $managerRole;
     }
 
     /** Semua karyawan yang cocok (tanpa paginasi) — untuk daftar kecil seperti tim satu atasan. */
@@ -480,6 +494,71 @@ class PromotionData
     }
 
     /**
+     * Sebaran skor akhir dalam 10 kelompok (0,0–0,1 … 0,9–1,0) untuk grafik histogram.
+     * Hanya kolom skor yang dibaca, per 2.000 baris, supaya tetap ringan walau karyawannya ribuan.
+     *
+     * @return array{bins: list<array{from: float, to: float, total: int, recommended: int}>, cutoff: ?float, max: int}
+     */
+    public static function scoreDistribution(?array $period): array
+    {
+        $bins = [];
+        for ($i = 0; $i < 10; $i++) {
+            $bins[$i] = ['from' => $i / 10, 'to' => ($i + 1) / 10, 'total' => 0, 'recommended' => 0];
+        }
+        if (! $period) {
+            return ['bins' => $bins, 'cutoff' => null, 'max' => 0];
+        }
+
+        RankingResult::where('period_id', $period['id'])->select('id', 'final_score', 'approval_status')->toBase()
+            ->lazyById(2000)->each(function ($r) use (&$bins) {
+                $i = min(9, max(0, (int) floor((float) $r->final_score * 10)));
+                $bins[$i]['total']++;
+                if ($r->approval_status !== null) {
+                    $bins[$i]['recommended']++;
+                }
+            });
+
+        return [
+            'bins' => $bins,
+            // Skor terendah yang masih direkomendasikan = garis batas di grafik.
+            'cutoff' => ($cut = RankingResult::where('period_id', $period['id'])->whereNotNull('approval_status')->min('final_score')) !== null ? (float) $cut : null,
+            'max' => max(array_column($bins, 'total')),
+        ];
+    }
+
+    /**
+     * Riwayat skor satu karyawan di semua periode yang sudah diranking (lama → baru), untuk grafik tren.
+     *
+     * @return list<array{period_id:int, period:string, status:string, score:float, rank:int, total:int, approval_status:?string}>
+     */
+    public static function scoreHistory(int $employeeId): array
+    {
+        $results = RankingResult::query()
+            ->join('assessment_periods', 'assessment_periods.id', '=', 'ranking_results.period_id')
+            ->where('ranking_results.employee_id', $employeeId)
+            ->where('assessment_periods.status', '!=', AssessmentPeriod::DRAFT)
+            ->orderBy('assessment_periods.start_date')
+            ->get(['ranking_results.period_id', 'assessment_periods.period_name', 'assessment_periods.status',
+                'ranking_results.final_score', 'ranking_results.rank', 'ranking_results.approval_status']);
+        if ($results->isEmpty()) {
+            return [];
+        }
+
+        $totals = RankingResult::whereIn('period_id', $results->pluck('period_id'))
+            ->selectRaw('period_id, count(*) as n')->groupBy('period_id')->pluck('n', 'period_id');
+
+        return $results->map(fn ($r) => [
+            'period_id' => (int) $r->period_id,
+            'period' => $r->period_name,
+            'status' => $r->status,
+            'score' => (float) $r->final_score,
+            'rank' => (int) $r->rank,
+            'total' => (int) ($totals[$r->period_id] ?? 0),
+            'approval_status' => $r->approval_status,
+        ])->values()->all();
+    }
+
+    /**
      * Acuan normalisasi tiap kriteria (max untuk benefit, min untuk cost) dari semua peserta ranking,
      * dihitung di database.
      *
@@ -489,7 +568,7 @@ class PromotionData
     {
         return self::memo("bounds.{$period['id']}", function () use ($period) {
             $codes = self::criteriaCodes();
-            $types = self::criteriaModels()->pluck('attribute_type', 'id');
+            $types = collect(self::criteria($period['id']))->pluck('type', 'id');
 
             return AssessmentDetail::query()
                 ->join('assessments', 'assessments.id', '=', 'assessment_details.assessment_id')

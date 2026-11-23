@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\AssessmentReminder;
 use App\Queries\PromotionData;
 use App\Support\Format;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -48,15 +49,15 @@ class MonitorController extends Controller
             'filters' => $filters,
             'departments' => PromotionData::departments(),
             'canRemind' => PromotionData::isOpen($period),
-            'withoutSupervisor' => Employee::active()->whereNull('supervisor_id')->count(),
+            'withoutSupervisor' => Employee::active()->withoutValidSupervisor()->count(),
         ]);
     }
 
     /** Ingatkan atasan dari satu karyawan (semua bawahannya yang belum terkirim ikut disebut). */
     public function remind(Employee $employee): RedirectResponse
     {
-        if (! $employee->supervisor_id) {
-            return back()->withErrors(['monitor' => "{$employee->name} belum punya atasan penilai. Atur dulu di halaman Karyawan."]);
+        if (! $employee->supervisor_id || Employee::whereKey($employee->id)->withoutValidSupervisor()->exists()) {
+            return back()->withErrors(['monitor' => "{$employee->name} belum punya atasan penilai yang aktif. Atur dulu di halaman Karyawan."]);
         }
 
         $sent = $this->sendReminders([$employee->supervisor_id]);
@@ -98,6 +99,13 @@ class MonitorController extends Controller
                 Format::date($period->assessment_deadline->toDateString()),
                 $unfinished[$manager->id]->pluck('name')->all(),
             ));
+        }
+
+        if ($managers->isNotEmpty()) {
+            Activity::log('penilaian.ingatkan', 'Mengirim pengingat penilaian ke ' . $managers->pluck('name')->implode(', ') . '.', period: $period, properties: [
+                'atasan' => $managers->pluck('name')->all(),
+                'jumlah_bawahan' => $managers->sum(fn ($m) => $unfinished[$m->id]->count()),
+            ]);
         }
 
         return $managers->count();

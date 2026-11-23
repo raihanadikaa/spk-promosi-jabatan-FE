@@ -60,6 +60,18 @@ Karyawan bisa melihat skor dan status rekomendasinya sendiri. Admin mengelola ak
 - Normalisasi: benefit `r = x / max(x)`, cost `r = min(x) / x`
 - Skor akhir: `V = Σ wⱼ · rᵢⱼ`
 - Seluruh jejak disimpan: `assessment_details` (nilai mentah) → `normalized_scores` (r dan w·r) → `ranking_results` (V, peringkat, keputusan).
+- Bobot **dan jenis** (benefit/cost) disimpan per periode di `criteria_weights`, jadi mengubah jenis di periode baru tidak mengubah periode lama.
+- Catatan: pada kriteria cost, bila ada peserta bernilai 0 maka semua nilai di atas 0 mendapat r = 0 (sifat rumus `min/x`). Halaman Proses SAW menampilkan peringatan saat ini terjadi.
+
+## Fitur pendukung keputusan
+
+| Fitur | Role | Isi |
+|---|---|---|
+| Analisis sensitivitas (`/hrd/sensitivitas`, `/direktur/sensitivitas`) | HRD, direktur | Skenario geser bobot ±5/10/20 poin, rentang aman bobot tiap kriteria, selisih skor kandidat terakhir yang direkomendasikan, simulasi bobot sendiri. Hanya simulasi, tidak menyimpan apa pun. |
+| Log aktivitas (`/hrd/log-aktivitas`, `/admin/log-aktivitas`) | HRD, admin | Siapa melakukan apa dan kapan (bobot lama → baru, penilaian, hitung SAW, keputusan direktur, akun, login). Cari, filter, paginasi, unduh CSV. Hanya bisa dibaca. |
+| Grafik | HRD, direktur, karyawan | Sebaran skor akhir, ringkasan keputusan direktur, tren skor antar periode. |
+
+Setelah `git pull` yang membawa migrasi baru, jalankan `php artisan migrate`.
 
 ## Struktur kode
 

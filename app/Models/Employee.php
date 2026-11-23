@@ -60,6 +60,17 @@ class Employee extends Model
         $query->where('is_active', true);
     }
 
+    /**
+     * Karyawan yang tidak bisa dinilai siapa pun: belum punya atasan, atau atasannya sudah
+     * dinonaktifkan / tidak lagi ber-role atasan (mis. diubah admin).
+     */
+    public function scopeWithoutValidSupervisor(Builder $query): void
+    {
+        $query->where(fn ($q) => $q->whereNull('supervisor_id')
+            ->orWhereDoesntHave('supervisor', fn ($u) => $u->where('is_active', true)
+                ->whereHas('role', fn ($r) => $r->where('role_name', 'manager'))));
+    }
+
     /** Masa kerja dalam tahun (1 desimal) sampai tanggal tertentu, mis. akhir periode. */
     public function tenureAt(CarbonInterface $date): float
     {

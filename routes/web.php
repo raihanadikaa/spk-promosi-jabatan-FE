@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\SensitivityController;
 use App\Http\Controllers\Direktur\DirekturController;
 use App\Http\Controllers\Direktur\DirekturDashboardController;
 use App\Http\Controllers\Hrd\CriteriaController;
@@ -103,6 +105,8 @@ Route::middleware(['auth', 'idle', 'role:admin'])->prefix('admin')->name('admin.
     Route::put('/pengguna/{user}', [AdminController::class, 'update'])->name('users.update');
     Route::post('/pengguna/{user}/status', [AdminController::class, 'toggle'])->name('users.toggle');
     Route::post('/pengguna/{user}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset');
+    Route::get('/log-aktivitas', [ActivityLogController::class, 'index'])->name('activity');
+    Route::get('/log-aktivitas/unduh', [ActivityLogController::class, 'export'])->middleware('throttle:10,1')->name('activity.export');
 });
 
 Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->group(function () {
@@ -150,6 +154,11 @@ Route::middleware(['auth', 'idle', 'role:hrd'])->prefix('hrd')->name('hrd.')->gr
     Route::get('/ranking/unduh', [HrdController::class, 'export'])->name('ranking.export');
     Route::get('/ranking/laporan', [HrdController::class, 'report'])->name('ranking.report');
     Route::get('/ranking/{employee}', [HrdController::class, 'candidate'])->name('ranking.show');
+
+    // Simulasi bobot: hanya membaca, tidak mengubah data. Dibatasi karena menghitung ulang SAW berkali-kali.
+    Route::get('/sensitivitas', [SensitivityController::class, 'index'])->middleware('throttle:30,1')->name('sensitivity');
+    Route::get('/log-aktivitas', [ActivityLogController::class, 'index'])->name('activity');
+    Route::get('/log-aktivitas/unduh', [ActivityLogController::class, 'export'])->middleware('throttle:10,1')->name('activity.export');
 });
 
 Route::middleware(['auth', 'idle', 'role:manager'])->prefix('atasan')->name('manager.')->group(function () {
@@ -168,6 +177,7 @@ Route::middleware(['auth', 'idle', 'role:direktur'])->prefix('direktur')->name('
     Route::get('/ranking/laporan', [DirekturController::class, 'report'])->name('ranking.report');
     Route::get('/ranking/{employee}', [DirekturController::class, 'candidate'])->name('ranking.show');
     Route::post('/ranking/{employee}/keputusan', [DirekturController::class, 'decide'])->name('ranking.decide');
+    Route::get('/sensitivitas', [SensitivityController::class, 'index'])->middleware('throttle:30,1')->name('sensitivity');
 });
 
 Route::middleware(['auth', 'idle', 'role:karyawan'])->prefix('karyawan')->name('karyawan.')->group(function () {

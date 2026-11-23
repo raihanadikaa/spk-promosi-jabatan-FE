@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SaveAssessmentRequest;
 use App\Queries\PromotionData;
 use App\Services\AssessmentService;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -62,7 +63,12 @@ class ManagerController extends Controller
         $period = PromotionData::currentPeriodModel() ?? abort(404);
         $submit = $request->validated('action') === 'submit';
 
-        $service->save($request->user(), $target, $period, $request->scores(), $request->validated('notes'), $submit);
+        $assessment = $service->save($request->user(), $target, $period, $request->scores(), $request->validated('notes'), $submit);
+        Activity::log(
+            $submit ? 'penilaian.kirim' : 'penilaian.draft',
+            ($submit ? 'Mengirim penilaian ' : 'Menyimpan draft penilaian ') . $target->name . '.',
+            $assessment, $period, ['nilai' => array_filter($request->scores(), fn ($v) => $v !== null)],
+        );
 
         return $submit
             ? to_route('manager.assessments')->with('success', "Penilaian {$target->name} dikirim ke HRD.")

@@ -27,11 +27,11 @@ class PerformanceTest extends TestCase
     private const MAX_QUERIES = 35;
 
     private const PAGES = [
-        'hrd@talentrank.test' => ['/hrd/dashboard', '/hrd/karyawan', '/hrd/periode', '/hrd/kriteria', '/hrd/proses-saw', '/hrd/ranking', '/hrd/ranking/1'],
+        'hrd@talentrank.test' => ['/hrd/dashboard', '/hrd/karyawan', '/hrd/periode', '/hrd/kriteria', '/hrd/proses-saw', '/hrd/ranking', '/hrd/ranking/1', '/hrd/sensitivitas', '/hrd/log-aktivitas'],
         'atasan@talentrank.test' => ['/atasan/dashboard', '/atasan/penilaian', '/atasan/penilaian/7', '/atasan/ranking'],
-        'direktur@talentrank.test' => ['/direktur/dashboard', '/direktur/ranking'],
+        'direktur@talentrank.test' => ['/direktur/dashboard', '/direktur/ranking', '/direktur/sensitivitas'],
         'karyawan@talentrank.test' => ['/karyawan/dashboard'],
-        'admin@talentrank.test' => ['/admin/dashboard', '/admin/pengguna'],
+        'admin@talentrank.test' => ['/admin/dashboard', '/admin/pengguna', '/admin/log-aktivitas'],
     ];
 
     public function test_jumlah_query_tidak_tumbuh_mengikuti_jumlah_data(): void
@@ -57,6 +57,25 @@ class PerformanceTest extends TestCase
         $this->actingAs($hrd)->get('/hrd/karyawan?page=4')->assertOk()->assertSee('46–52', false);
         $this->actingAs($hrd)->get('/hrd/ranking')->assertOk()->assertSee('dari 49', false);
         $this->actingAs($hrd)->get('/hrd/karyawan?q=Tambahan%2007')->assertOk()->assertSee('dari 1', false);
+    }
+
+    /** Ribuan karyawan: analisis sensitivitas & grafik tetap selesai dalam waktu wajar dan hasilnya utuh. */
+    public function test_analisis_sensitivitas_dan_grafik_dengan_ribuan_karyawan(): void
+    {
+        $this->addEmployees(2000);
+        $hrd = User::where('email', 'hrd@talentrank.test')->first();
+        PromotionData::flush();
+        $total = \App\Models\RankingResult::where('period_id', AssessmentPeriod::where('status', 'ongoing')->value('id'))->count();
+
+        $start = microtime(true);
+        $this->actingAs($hrd)->get('/hrd/sensitivitas')->assertOk()->assertSee('Batas aman bobot')->assertSee(number_format($total, 0, ',', '.'));
+        $seconds = microtime(true) - $start;
+        $this->assertLessThan(15, $seconds, "Analisis sensitivitas {$total} karyawan butuh " . round($seconds, 1) . ' detik');
+
+        PromotionData::flush();
+        $distribution = PromotionData::scoreDistribution(PromotionData::currentPeriod());
+        $this->assertSame($total, array_sum(array_column($distribution['bins'], 'total')));
+        $this->actingAs($hrd)->get('/hrd/dashboard')->assertOk()->assertSee('Sebaran skor akhir');
     }
 
     /** @return array<string, int> */

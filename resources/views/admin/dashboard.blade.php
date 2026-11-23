@@ -1,8 +1,6 @@
 @php
     use App\Support\Format;
 
-    $active = $users->where('is_active', true);
-    $byRole = $active->countBy(fn ($u) => $u->role?->role_name);
 @endphp
 
 <x-app-layout title="Administrasi sistem" subtitle="Admin mengelola akun dan hak akses. Admin tidak ikut menilai maupun memutuskan promosi.">
@@ -11,7 +9,7 @@
     </x-slot:actions>
 
     <x-stat-strip :items="[
-        ['label' => 'Akun aktif', 'value' => $active->count(), 'hint' => 'dari ' . $users->count()],
+        ['label' => 'Akun aktif', 'value' => $activeUsers, 'hint' => 'dari ' . $totalUsers],
         ['label' => 'HRD', 'value' => $byRole['hrd'] ?? 0],
         ['label' => 'Atasan', 'value' => $byRole['manager'] ?? 0],
         ['label' => 'Direktur', 'value' => $byRole['direktur'] ?? 0],
@@ -19,7 +17,6 @@
 
     <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <x-panel title="Login terakhir" flush>
-            @php $recent = $users->whereNotNull('last_login_at')->sortByDesc('last_login_at')->take(6); @endphp
             @if ($recent->isEmpty())
                 <x-empty-state icon="clock" title="Belum ada yang login" />
             @else
@@ -51,4 +48,22 @@
             </ul>
         </x-panel>
     </div>
+
+    <x-panel class="mt-6" title="Aktivitas terbaru" description="Perubahan data dan login terakhir di sistem." flush>
+        <x-slot:actions>
+            <a href="{{ route('admin.activity') }}" class="link text-sm">Lihat semua log</a>
+        </x-slot:actions>
+        @if ($recentActivity->isEmpty())
+            <x-empty-state icon="history" title="Belum ada aktivitas tercatat" />
+        @else
+            <ul class="divide-y divide-line">
+                @foreach ($recentActivity as $log)
+                    <li class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-5 py-3">
+                        <p class="min-w-0 flex-1 text-ink"><span class="font-semibold">{{ $log->user_name ?? 'Sistem' }}</span> <span class="text-ink-muted">·</span> {{ $log->description }}</p>
+                        <p class="num shrink-0 text-sm text-ink-muted">{{ Format::dateTime($log->created_at->format('Y-m-d H:i')) }}</p>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </x-panel>
 </x-app-layout>

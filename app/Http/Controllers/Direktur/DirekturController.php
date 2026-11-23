@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RankingResult;
 use App\Queries\PromotionData;
 use App\Services\DecisionService;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -60,6 +61,12 @@ class DirekturController extends Controller
         $result = RankingResult::where('period_id', $period->id)->where('employee_id', $employee)->firstOrFail();
 
         $decisions->decide($request->user(), $result, $validated['decision'], $validated['note'] ?? null);
+        $name = $result->employee()->value('name');
+        Activity::log('keputusan.' . $validated['decision'], match ($validated['decision']) {
+            'approve' => "Menyetujui promosi {$name} (peringkat {$result->rank}).",
+            'reject' => "Menolak rekomendasi promosi {$name} (peringkat {$result->rank}).",
+            'revision' => "Meminta HRD meninjau ulang {$name} (peringkat {$result->rank}).",
+        }, $result, $period, array_filter(['catatan' => $validated['note'] ?? null, 'skor' => $result->final_score]));
 
         return to_route('direktur.approvals')->with('success', match ($validated['decision']) {
             'approve' => 'Promosi disetujui.',

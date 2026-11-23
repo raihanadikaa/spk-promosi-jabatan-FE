@@ -76,7 +76,7 @@
                                     {{ Format::number($e['tenure'], 1) }} th
                                     <p class="text-sm text-ink-muted">sejak {{ Format::date($e['join_date']) }}</p>
                                 </td>
-                                <td @class(['text-ink-muted', '!text-bad font-medium' => ! $e['supervisor_id']])>{{ $e['assessor'] }}</td>
+                                <td @class(['text-ink-muted', '!text-bad font-medium' => ! $e['supervisor_valid']])>{{ $e['assessor'] }}</td>
                                 <td>
                                     <x-status :value="$e['status']" />
                                     @if ($e['status'] === 'submitted' && $e['assessment_id'])

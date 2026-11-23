@@ -33,6 +33,19 @@
         </div>
     @endif
 
+    {{-- Kriteria cost dengan nilai terkecil 0: rumus r = min/x membuat semua nilai di atas 0 mendapat r = 0. --}}
+    @php $zeroCost = $ranked > 0 ? collect($criteria)->filter(fn ($c) => $c['type'] === 'cost' && isset($bounds[$c['code']]) && (float) $bounds[$c['code']] === 0.0) : collect(); @endphp
+    @if ($zeroCost->isNotEmpty())
+        <div class="mb-6 flex gap-3 rounded-panel border border-warn/30 bg-warn-bg px-4 py-3 text-sm text-warn" role="note">
+            <x-icon name="alert" class="mt-0.5 size-4 shrink-0" />
+            <p>
+                <span class="font-semibold">{{ $zeroCost->map(fn ($c) => $c['code'] . ' ' . $c['name'])->implode(', ') }}</span>:
+                ada peserta bernilai 0, sehingga dengan rumus cost r = min ÷ x semua peserta yang nilainya di atas 0 mendapat r = 0
+                (nilai 1 dan 30 dianggap sama buruknya). Ini perilaku rumus SAW standar; pertimbangkan skala konversi bila perbedaan itu penting.
+            </p>
+        </div>
+    @endif
+
     @if ($ranked === 0)
         <x-panel>
             <x-empty-state icon="calculator" title="Belum ada hasil perhitungan"

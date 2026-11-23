@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CriteriaWeight extends Model
 {
-    protected $fillable = ['criteria_id', 'period_id', 'weight_value'];
+    /** attribute_type: jenis kriteria (benefit/cost) di periode ini; null = ikut jenis bawaan kriteria. */
+    protected $fillable = ['criteria_id', 'period_id', 'weight_value', 'attribute_type'];
 
     protected function casts(): array
     {

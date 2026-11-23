@@ -35,6 +35,7 @@ class KaryawanDashboardController extends Controller
             'total' => PromotionData::rankingCount($period),
             'criteria' => $period ? PromotionData::criteria($period['id']) : [],
             'history' => $employee ? $this->history($employee->id, $period['id'] ?? null) : [],
+            'trend' => $employee ? PromotionData::scoreHistory($employee->id) : [],
         ]);
     }
 

@@ -10,6 +10,7 @@
 <x-app-layout title="Rekomendasi promosi {{ $period['name'] }}"
               subtitle="Sistem merekomendasikan {{ $recommended->count() }} kandidat dengan skor tertinggi. Keputusan akhir ada di Anda.">
     <x-slot:actions>
+        <x-btn variant="secondary" :href="route('direktur.sensitivity')" icon="scale">Uji sensitivitas</x-btn>
         <x-btn variant="secondary" :href="route('direktur.ranking')" icon="trophy">Ranking lengkap</x-btn>
     </x-slot:actions>
 
@@ -46,6 +47,10 @@
             <x-criteria-legend class="mt-3" />
         @endif
     </section>
+
+    <x-panel class="mt-8" title="Sebaran skor seluruh karyawan" description="Posisi kandidat yang direkomendasikan dibanding karyawan lain periode ini.">
+        <x-score-histogram :distribution="$distribution" />
+    </x-panel>
 
     @if ($decided->isNotEmpty())
         <x-panel class="mt-8" title="Sudah diputuskan" flush>

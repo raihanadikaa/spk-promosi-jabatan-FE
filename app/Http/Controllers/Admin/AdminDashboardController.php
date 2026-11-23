@@ -24,9 +24,22 @@ class AdminDashboardController extends Controller
             return $redirect;
         }
 
+        // Dihitung di database: jumlah akun bisa ribuan (setiap karyawan bisa punya akun portal).
+        $activeByRole = User::query()
+            ->where('users.is_active', true)
+            ->leftJoin('roles', 'roles.id', '=', 'users.role_id')
+            ->selectRaw('roles.role_name, count(*) as n')
+            ->groupBy('roles.role_name')
+            ->pluck('n', 'role_name');
+
         return view('admin.dashboard', [
-            'users' => User::with('role:id,role_name')->get(['id', 'name', 'email', 'role_id', 'is_active', 'last_login_at']),
+            'totalUsers' => User::count(),
+            'activeUsers' => (int) $activeByRole->sum(),
+            'byRole' => $activeByRole->map(fn ($n) => (int) $n)->all(),
+            'recent' => User::with('role:id,role_name')->whereNotNull('last_login_at')->orderByDesc('last_login_at')->limit(6)
+                ->get(['id', 'name', 'role_id', 'last_login_at']),
             'roles' => PromotionData::roleLabels(),
+            'recentActivity' => \App\Models\ActivityLog::orderByDesc('created_at')->orderByDesc('id')->limit(6)->get(['id', 'user_name', 'description', 'created_at']),
         ]);
     }
 }

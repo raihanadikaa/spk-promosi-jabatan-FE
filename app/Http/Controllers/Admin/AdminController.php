@@ -7,6 +7,7 @@ use App\Http\Requests\UserRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Queries\PromotionData;
+use App\Support\Activity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,7 @@ class AdminController extends Controller
         $temporary = $this->temporaryPassword();
 
         $user = User::forceCreate($request->validated() + ['password' => $temporary, 'is_active' => true]);
+        Activity::log('akun.buat', "Membuat akun {$user->name} ({$user->email}) dengan role {$user->roleName()}.", $user);
 
         return to_route('admin.users')
             ->with('success', "Akun {$user->name} dibuat.")
@@ -65,9 +67,14 @@ class AdminController extends Controller
             throw ValidationException::withMessages(['role_id' => 'Anda tidak bisa mengubah role akun sendiri.']);
         }
 
-        $user->forceFill($data)->save();
+        $user->forceFill($data);
+        $changed = array_keys(collect($user->getDirty())->except('updated_at')->all());
+        $user->save();
+        if ($changed) {
+            Activity::log('akun.ubah', "Mengubah akun {$user->name}: " . implode(', ', $changed) . '.', $user);
+        }
 
-        return to_route('admin.users')->with('success', "Akun {$user->name} diperbarui.");
+        return to_route('admin.users')->with('success', "Akun {$user->name} diperbarui." . $this->orphanWarning($user));
     }
 
     public function toggle(Request $request, User $user): RedirectResponse
@@ -86,7 +93,9 @@ class AdminController extends Controller
             }
         });
 
-        return to_route('admin.users')->with('success', $user->is_active ? "{$user->name} diaktifkan." : "{$user->name} dinonaktifkan.");
+        Activity::log('akun.status', ($user->is_active ? 'Mengaktifkan' : 'Menonaktifkan') . " akun {$user->name}.", $user);
+
+        return to_route('admin.users')->with('success', ($user->is_active ? "{$user->name} diaktifkan." : "{$user->name} dinonaktifkan.") . $this->orphanWarning($user));
     }
 
     public function resetPassword(Request $request, User $user): RedirectResponse
@@ -98,10 +107,23 @@ class AdminController extends Controller
         $temporary = $this->temporaryPassword();
         $user->forceFill(['password' => $temporary, 'remember_token' => Str::random(60)])->save();
         DB::table('sessions')->where('user_id', $user->id)->delete();
+        Activity::log('akun.reset', "Mereset password akun {$user->name}.", $user);
 
         return to_route('admin.users')
             ->with('success', "Password {$user->name} direset.")
             ->with('temporary_password', ['name' => $user->name, 'email' => $user->email, 'password' => $temporary]);
+    }
+
+    /** Bawahan aktif yang kehilangan penilai karena akun ini nonaktif atau bukan atasan lagi. */
+    private function orphanWarning(User $user): string
+    {
+        $user->unsetRelation('role');
+        if ($user->is_active && $user->hasRole('manager')) {
+            return '';
+        }
+        $count = \App\Models\Employee::active()->where('supervisor_id', $user->id)->count();
+
+        return $count ? " Perhatian: {$count} karyawan aktif masih tercatat sebagai bawahannya dan tidak bisa dinilai sampai HRD mengganti atasan penilainya." : '';
     }
 
     private function temporaryPassword(): string

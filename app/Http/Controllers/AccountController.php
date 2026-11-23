@@ -47,6 +47,8 @@ class AccountController extends Controller
         Auth::login($user, $remembered);
         $request->session()->regenerate();
 
+        \App\Support\Activity::log('akun.password', "{$user->name} mengganti password sendiri.", $user);
+
         return back()->with('success', 'Password berhasil diganti.');
     }
 }

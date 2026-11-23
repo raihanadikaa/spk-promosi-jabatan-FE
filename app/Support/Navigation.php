@@ -13,6 +13,7 @@ class Navigation
             'admin' => [
                 ['label' => 'Beranda', 'route' => 'admin.dashboard', 'icon' => 'home'],
                 ['label' => 'Pengguna & role', 'route' => 'admin.users', 'icon' => 'users'],
+                ['label' => 'Log aktivitas', 'route' => 'admin.activity', 'icon' => 'history', 'match' => 'admin.activity*'],
             ],
             'hrd' => [
                 ['label' => 'Beranda', 'route' => 'hrd.dashboard', 'icon' => 'home'],
@@ -23,6 +24,8 @@ class Navigation
                 ['label' => 'Monitor penilaian', 'route' => 'hrd.monitor', 'icon' => 'clipboard'],
                 ['label' => 'Proses SAW', 'route' => 'hrd.saw', 'icon' => 'calculator', 'match' => 'hrd.saw*'],
                 ['label' => 'Ranking', 'route' => 'hrd.ranking', 'icon' => 'trophy', 'match' => 'hrd.ranking*'],
+                ['label' => 'Analisis sensitivitas', 'route' => 'hrd.sensitivity', 'icon' => 'scale'],
+                ['label' => 'Log aktivitas', 'route' => 'hrd.activity', 'icon' => 'history', 'match' => 'hrd.activity*'],
             ],
             'manager' => [
                 ['label' => 'Beranda', 'route' => 'manager.dashboard', 'icon' => 'home'],
@@ -33,6 +36,7 @@ class Navigation
                 ['label' => 'Beranda', 'route' => 'direktur.dashboard', 'icon' => 'home'],
                 ['label' => 'Ranking', 'route' => 'direktur.ranking', 'icon' => 'trophy', 'match' => 'direktur.ranking*'],
                 ['label' => 'Persetujuan promosi', 'route' => 'direktur.approvals', 'icon' => 'check-circle'],
+                ['label' => 'Analisis sensitivitas', 'route' => 'direktur.sensitivity', 'icon' => 'scale'],
             ],
             'karyawan' => [
                 ['label' => 'Skor saya', 'route' => 'karyawan.dashboard', 'icon' => 'user'],

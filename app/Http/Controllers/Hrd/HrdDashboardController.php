@@ -46,6 +46,7 @@ class HrdDashboardController extends Controller
             'departments' => PromotionData::departmentProgress($period),
             'followUps' => $followUps,
             'top' => PromotionData::ranking($period, limit: 5),
+            'distribution' => PromotionData::scoreDistribution($period),
             'stale' => PromotionData::staleReasons($period),
         ]);
     }
