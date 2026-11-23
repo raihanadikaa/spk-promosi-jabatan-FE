@@ -20,7 +20,7 @@
 
     @include('partials.stale-banner')
 
-    <section class="tr-shine grid gap-6 rounded-panel border border-[#C7D2FE] bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#1E4B6D] p-5 text-white shadow-md sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.85fr)] lg:items-center"
+    <section class="tr-shine grid gap-6 rounded-panel border border-[#C7D2FE] dark:border-line-strong bg-gradient-to-br from-[#0B1F33] via-[#17324D] to-[#1E4B6D] p-5 text-white shadow-md sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.85fr)] lg:items-center"
              aria-label="Periode aktif dan progres penilaian">
         <div>
             <x-status :value="$period['status']" />

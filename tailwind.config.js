@@ -2,8 +2,13 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
 /** Token warna & tipografi TalentRank */
+const v = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
+    // Mode gelap dipilih lewat atribut data-theme pada <html> (tombol di sidebar; bawaan mengikuti sistem).
+    darkMode: ['selector', '[data-theme="dark"]'],
+
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
@@ -25,21 +30,23 @@ export default {
                 xl: ['26px', '32px'],
                 '2xl': ['34px', '40px'],
             },
+            // Warna dibaca dari variabel CSS (resources/css/app.css) supaya mode gelap cukup mengganti variabelnya.
+            // Nilai mode terang sama persis dengan warna sebelumnya. Modifier opasitas (bg-c1/70 dst.) tetap jalan.
             colors: {
-                brand: { DEFAULT: '#2563EB', hover: '#1D4ED8', soft: '#EFF6FF', ring: '#60A5FA' },
-                ink: { DEFAULT: '#1E293B', muted: '#64748B', faint: '#94A3B8' },
-                line: { DEFAULT: '#E2E8F0', strong: '#CBD5E1' },
-                canvas: '#F8FAFC',
-                surface: '#FFFFFF',
-                c1: '#3F6E9A',
-                c2: '#21877A',
-                c3: '#C08A1E',
-                c4: '#86549B',
-                c5: '#5F8F4E',
-                ok: { DEFAULT: '#0F766E', bg: '#CCFBF1' },
-                warn: { DEFAULT: '#B45309', bg: '#FEF3C7' },
-                bad: { DEFAULT: '#B91C1C', bg: '#FEE2E2' },
-                info: { DEFAULT: '#475569', bg: '#F1F5F9' },
+                brand: { DEFAULT: v('brand'), hover: v('brand-hover'), soft: v('brand-soft'), ring: v('brand-ring') },
+                ink: { DEFAULT: v('ink'), muted: v('ink-muted'), faint: v('ink-faint') },
+                line: { DEFAULT: v('line'), strong: v('line-strong') },
+                canvas: v('canvas'),
+                surface: v('surface'),
+                c1: v('c1'),
+                c2: v('c2'),
+                c3: v('c3'),
+                c4: v('c4'),
+                c5: v('c5'),
+                ok: { DEFAULT: v('ok'), bg: v('ok-bg') },
+                warn: { DEFAULT: v('warn'), bg: v('warn-bg') },
+                bad: { DEFAULT: v('bad'), bg: v('bad-bg') },
+                info: { DEFAULT: v('info'), bg: v('info-bg') },
             },
             borderRadius: {
                 ctl: '0.5rem',

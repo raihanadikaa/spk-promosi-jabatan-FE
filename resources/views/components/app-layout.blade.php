@@ -17,6 +17,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>TalentRank</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    @include('partials.theme-init')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body x-data="{ nav: false }" @keydown.escape.window="nav = false">
@@ -121,6 +122,7 @@
             <a href="{{ route('account.password') }}" @class(['mt-1 flex items-center gap-2 rounded-ctl px-2 py-1.5 text-sm hover:bg-canvas hover:text-ink', 'font-semibold text-brand' => request()->routeIs('account.*'), 'text-ink-muted' => ! request()->routeIs('account.*')])>
                 <x-icon name="lock" class="size-4" /> Ganti password
             </a>
+            <x-theme-toggle class="mt-0.5" />
         </div>
     </aside>
 
@@ -131,6 +133,7 @@
         </button>
         <x-logo class="size-7" />
         <span class="font-extrabold tracking-title">TalentRank</span>
+        <x-theme-toggle compact class="ml-auto" />
     </header>
 
     <main id="konten" class="mx-auto max-w-[98rem] px-4 pb-16 pt-6 sm:px-6 lg:px-10 lg:pt-8">

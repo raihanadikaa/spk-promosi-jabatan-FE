@@ -5,6 +5,79 @@
 @tailwind utilities;
 
 @layer base {
+    /* Token warna (kanal RGB) — mode terang = warna asli TalentRank. */
+    :root {
+        color-scheme: light;
+        --c-brand: 37 99 235;
+        --c-brand-hover: 29 78 216;
+        --c-brand-soft: 239 246 255;
+        --c-brand-ring: 96 165 250;
+        --c-ink: 30 41 59;
+        --c-ink-muted: 100 116 139;
+        --c-ink-faint: 148 163 184;
+        --c-line: 226 232 240;
+        --c-line-strong: 203 213 225;
+        --c-canvas: 248 250 252;
+        --c-surface: 255 255 255;
+        --c-c1: 63 110 154;
+        --c-c2: 33 135 122;
+        --c-c3: 192 138 30;
+        --c-c4: 134 84 155;
+        --c-c5: 95 143 78;
+        --c-ok: 15 118 110;
+        --c-ok-bg: 204 251 241;
+        --c-warn: 180 83 9;
+        --c-warn-bg: 254 243 199;
+        --c-bad: 185 28 28;
+        --c-bad-bg: 254 226 226;
+        --c-info: 71 85 105;
+        --c-info-bg: 241 245 249;
+    }
+
+    /* Mode gelap: latar biru-arang, teks terang, warna status dibuat lebih terang supaya tetap kontras. */
+    :root[data-theme='dark'] {
+        color-scheme: dark;
+        --c-brand: 59 130 246;
+        --c-brand-hover: 96 165 250;
+        --c-brand-soft: 23 37 84;
+        --c-brand-ring: 96 165 250;
+        --c-ink: 226 232 240;
+        --c-ink-muted: 148 163 184;
+        --c-ink-faint: 100 116 139;
+        --c-line: 36 48 68;
+        --c-line-strong: 51 65 89;
+        --c-canvas: 11 17 29;
+        --c-surface: 17 25 39;
+        --c-c1: 96 145 196;
+        --c-c2: 45 170 155;
+        --c-c3: 222 168 64;
+        --c-c4: 170 120 196;
+        --c-c5: 125 178 105;
+        --c-ok: 45 212 191;
+        --c-ok-bg: 19 52 50;
+        --c-warn: 251 191 36;
+        --c-warn-bg: 58 42 10;
+        --c-bad: 248 113 113;
+        --c-bad-bg: 69 20 20;
+        --c-info: 203 213 225;
+        --c-info-bg: 30 41 59;
+    }
+
+    /* Tombol hijau/merah: di mode gelap warnanya terang, jadi teksnya gelap supaya terbaca. */
+    :root[data-theme='dark'] .bg-ok.text-white,
+    :root[data-theme='dark'] .bg-bad.text-white {
+        color: rgb(var(--c-canvas));
+    }
+
+    /* Elemen gelap berteks putih (avatar, tooltip) tetap gelap; latar modal tetap menggelapkan. */
+    :root[data-theme='dark'] .bg-ink.text-white {
+        background-color: rgb(51 65 89);
+    }
+
+    :root[data-theme='dark'] .bg-ink\/40 {
+        background-color: rgb(0 0 0 / 0.6);
+    }
+
     html {
         -webkit-font-smoothing: antialiased;
     }
@@ -155,7 +228,7 @@
     .tr-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 12px 28px -14px rgba(15, 23, 42, 0.28);
-        border-color: theme('colors.line.strong');
+        border-color: rgb(var(--c-line-strong));
     }
 
     .tr-icon {
@@ -253,7 +326,7 @@ html.tr-navigating::after {
     inset: 0 0 auto 0;
     z-index: 100;
     height: 3px;
-    background: linear-gradient(90deg, theme('colors.brand.DEFAULT'), theme('colors.brand.ring'));
+    background: linear-gradient(90deg, rgb(var(--c-brand)), rgb(var(--c-brand-ring)));
     transform-origin: left;
     animation: tr-progress 8s cubic-bezier(0.1, 0.6, 0.2, 1) forwards;
 }
@@ -317,6 +390,28 @@ html.tr-navigating::after {
 @media print {
     @page { size: A4 portrait; margin: 14mm; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Kertas selalu terang walau layar sedang mode gelap. */
+    :root[data-theme='dark'] {
+        color-scheme: light;
+        --c-brand: 37 99 235;
+        --c-brand-soft: 239 246 255;
+        --c-ink: 30 41 59;
+        --c-ink-muted: 100 116 139;
+        --c-ink-faint: 148 163 184;
+        --c-line: 226 232 240;
+        --c-line-strong: 203 213 225;
+        --c-canvas: 255 255 255;
+        --c-surface: 255 255 255;
+        --c-ok: 15 118 110;
+        --c-ok-bg: 204 251 241;
+        --c-warn: 180 83 9;
+        --c-warn-bg: 254 243 199;
+        --c-bad: 185 28 28;
+        --c-bad-bg: 254 226 226;
+        --c-info: 71 85 105;
+        --c-info-bg: 241 245 249;
+    }
 
     /* Cetak selalu dalam keadaan akhir: tidak ada elemen yang tertangkap setengah muncul. */
     *, *::before, *::after {

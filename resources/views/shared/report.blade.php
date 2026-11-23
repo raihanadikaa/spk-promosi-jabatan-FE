@@ -1,7 +1,7 @@
 @php use App\Support\Format; @endphp
 {{-- Laporan hasil ranking siap cetak. "Cetak / simpan PDF" memakai dialog cetak browser, jadi tanpa pustaka PDF. --}}
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">{{-- laporan berupa "kertas": selalu terang --}}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
